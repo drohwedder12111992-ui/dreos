@@ -85,6 +85,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 .dnm{font-size:12.5px;font-weight:bold;margin-top:8px}
 .drl{font-size:10.5px;color:var(--sub);margin-top:1px;padding:0 4px}
 .plate{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:2px;color:#B89A6A;border:1px solid rgba(184,154,106,.45);border-radius:3px;padding:2px 7px;background:rgba(0,0,0,.25);white-space:nowrap}
+.dbadge{position:absolute;top:7px;right:7px;background:var(--teal2);color:#fff;font-size:9.5px;font-weight:bold;border-radius:9px;padding:2px 6px;min-width:18px;text-align:center;line-height:1.4}
 .dhandle{position:absolute;right:9px;top:53%;width:4px;height:22px;border-radius:2px;background:#B89A6A;opacity:.8}
 .door.board{width:226px}
 .door.board .dbody{background:linear-gradient(180deg,rgba(22,17,30,.93),rgba(13,10,19,.95))}
@@ -373,7 +374,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 </div>
 </div>
 <div id="doors"></div>
-<div id="hubfoot"><button onclick="openRadar()">📡 Muster-Radar</button><button onclick="openGov()">🗺️ Governance</button><button onclick="openFok()">🎯 Fokusthemen</button><button onclick="openSet()">⚙️ Einstellungen</button><button onclick="openInfo()">ℹ️ Info</button></div>
+<div id="hubfoot"><button onclick="openChats()">💬 Gespräche</button><button onclick="openRadar()">📡 Muster-Radar</button><button onclick="openGov()">🗺️ Governance</button><button onclick="openFok()">🎯 Fokusthemen</button><button onclick="openSet()">⚙️ Einstellungen</button><button onclick="openInfo()">ℹ️ Info</button></div>
 </section>
 
 <section id="room" class="view">
@@ -788,7 +789,7 @@ document.getElementById("clouds").innerHTML=cl}
 
 /* ================= HUB ================= */
 function renderDoors(){let h="";
-CHARS.filter(c=>!c.desk).forEach(c=>{h+=`<div class="door ${c.red?"red":""}" onclick="enterRoom('${c.id}')"><div class="dbody"><div class="dlight"></div>${avatar(c,58)}<div class="dnm">${c.name}</div><div class="drl">${c.role}</div><div class="plate">BÜRO ${ROOMNO[c.id]}</div><div class="dhandle"></div></div></div>`});
+CHARS.filter(c=>!c.desk).forEach(c=>{const cnt=(ST.chats[c.id]||[]).length;const badge=cnt>0?`<div class="dbadge">${cnt}</div>`:"";h+=`<div class="door ${c.red?"red":""}" onclick="enterRoom('${c.id}')"><div class="dbody"><div class="dlight"></div>${badge}${avatar(c,58)}<div class="dnm">${c.name}</div><div class="drl">${c.role}</div><div class="plate">BÜRO ${ROOMNO[c.id]}</div><div class="dhandle"></div></div></div>`});
 h+=`<div class="door board" onclick="boardSetup()"><div class="dbody"><div class="dlight"></div><svg width="86" height="56" viewBox="0 0 86 58" style="margin-top:2px"><ellipse cx="43" cy="33" rx="33" ry="12" fill="none" stroke="#64AAB2" stroke-width="2"/><circle cx="43" cy="11" r="5" fill="#64AAB2"/><circle cx="12" cy="29" r="5" fill="#64AAB2"/><circle cx="74" cy="29" r="5" fill="#64AAB2"/><circle cx="27" cy="50" r="5" fill="#64AAB2"/><circle cx="59" cy="50" r="5" fill="#64AAB2"/></svg><div class="dnm">Meetingroom</div><div class="drl">Meeting mit mehreren Experten</div><div class="plate">MEETINGRAUM</div><div class="dhandle"></div></div></div>`;
 document.getElementById("doors").innerHTML=h}
 function renderRec(){const s=CH("sophie"),lv=rlev(),warn=lv[5]>=2||lv.filter(x=>x>=2).length>=3;
@@ -951,7 +952,8 @@ if(file&&msgs.length&&msgs[msgs.length-1].role==="user"){
   const textPart=t&&t!=="📎"?t:"Bitte diese Datei analysieren und kommentieren.";
   const blocks=[];
   if(file.mime.startsWith("image/")){blocks.push({type:"image",source:{type:"base64",media_type:file.mime,data:file.data}})}
-  else{blocks.push({type:"document",source:{type:"base64",media_type:file.mime,data:file.data}})}
+  else if(file.mime==="application/pdf"){blocks.push({type:"document",source:{type:"base64",media_type:"application/pdf",data:file.data}})}
+  else{try{const decoded=decodeURIComponent(escape(atob(file.data)));blocks.push({type:"text",text:"[Anhang: "+file.name+"]\n"+decoded})}catch(e){blocks.push({type:"text",text:"[Anhang: "+file.name+" – Inhalt konnte nicht dekodiert werden]"})}}
   blocks.push({type:"text",text:textPart});
   msgs[msgs.length-1].content=blocks;
 }
@@ -1116,6 +1118,15 @@ toast("Mara zieht sich zurück – 30 Minuten Ruhe.")}
 const ovl=document.getElementById("ovl"),panel=document.getElementById("panel");
 function closeOvl(){ovl.classList.remove("show")}
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3200)}
+function openChats(){
+const active=CHARS.map(c=>{const h=ST.chats[c.id]||[];if(!h.length)return null;const last=h[h.length-1];const who=last.r==="u"?"Du":fname(c);const preview=who+": "+(last.r==="m"?"[Mara klopfte an] ":"")+last.t.replace(/\n/g," ").slice(0,70)+(last.t.length>70?"…":"");return{c,cnt:h.length,preview}}).filter(Boolean);
+const meetKeys=Object.keys(ST.chats).filter(k=>k.startsWith("meet:")&&ST.chats[k].length>0);
+if(!active.length&&!meetKeys.length){panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>💬 Gespräche</h2><p class="desc" style="margin-top:12px">Noch keine Gespräche geführt. Platziere dein Anliegen bei Sophie am Empfang – sie bringt dich zur richtigen Person.</p>`;ovl.classList.add("show");return}
+let h=`<button class="x" onclick="closeOvl()">×</button><h2>💬 Gespräche</h2><div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">`;
+active.forEach(({c,cnt,preview})=>{h+=`<div style="display:flex;align-items:center;gap:12px;background:rgba(31,15,21,.72);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer" onclick="closeOvl();enterRoom('${c.id}')">${avatar(c,42)}<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:bold">${esc(c.name)} <span style="font-weight:normal;color:var(--sub);font-size:11px">${c.role}</span></div><div style="font-size:12px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${esc(preview)}</div></div><div style="font-size:11px;color:var(--teal);background:rgba(100,170,178,.15);border-radius:9px;padding:3px 8px;flex:0 0 auto;white-space:nowrap">${cnt} Nachr.</div></div>`});
+meetKeys.forEach(key=>{const msgs=ST.chats[key];const ids=key.replace("meet:","").split("-").filter(id=>CH(id));if(!ids.length)return;const names=ids.map(id=>fname(CH(id))).join(" · ");const last=msgs[msgs.length-1];const preview=(last.r==="u"?"Du":names)+": "+last.t.replace(/\n/g," ").slice(0,70)+(last.t.length>70?"…":"");const idList=ids.map(id=>"'"+id+"'").join(",");h+=`<div style="display:flex;align-items:center;gap:12px;background:rgba(31,15,21,.72);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer" onclick="closeOvl();enterMeet([${idList}])"><div style="width:42px;height:42px;border-radius:50%;background:rgba(100,170,178,.15);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 42px">👥</div><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:bold">Meeting <span style="font-weight:normal;color:var(--sub);font-size:11px">${esc(names)}</span></div><div style="font-size:12px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${esc(preview)}</div></div><div style="font-size:11px;color:var(--teal);background:rgba(100,170,178,.15);border-radius:9px;padding:3px 8px;flex:0 0 auto;white-space:nowrap">${msgs.length} Nachr.</div></div>`});
+h+=`</div><div class="btnrow" style="margin-top:14px"><button class="btn r" onclick="if(confirm('Alle Gesprächsverläufe löschen?')){ST.chats={};save();renderDoors();closeOvl();toast('Verläufe gelöscht')}">Alle Verläufe löschen</button></div>`;
+panel.innerHTML=h;ovl.classList.add("show")}
 function openFok(){panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Fokusthemen</h2><ul class="fok" id="fok" style="margin-top:12px"></ul><div class="addf"><input id="nf" placeholder="Neues Fokusthema…" onkeydown="if(event.key==='Enter')addFok()"><button class="btn" onclick="addFok()">+</button></div>`;renderFok();ovl.classList.add("show")}
 function renderFok(){const el=document.getElementById("fok");if(el)el.innerHTML=ST.fokus.map((f,i)=>`<li>${esc(f)}<button onclick="ST.fokus.splice(${i},1);save();renderFok()" title="Entfernen">×</button></li>`).join("")}
 function addFok(){const v=document.getElementById("nf").value.trim();if(v){ST.fokus.push(v);save();renderFok();document.getElementById("nf").value=""}}
