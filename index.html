@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DREOS">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B0610">
+<title>DREOS Office</title>
+<style>
+:root{--red:#EA0029;--dark:#31171F;--bg:#0B0610;--teal:#64AAB2;--teal2:#2F7C85;--txt:#F5F2F3;--mut:#C1B9BC;--sub:#8a7b80;--line:rgba(255,255,255,.09);--glass:rgba(16,9,14,.62);--nf:1;--litw:1}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05030a;color:var(--txt);font-family:"EOS Office",Arial,Helvetica,sans-serif;min-height:100vh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer}
+/* ===== LOBBY ===== */
+#lobby{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity 1.1s ease;cursor:pointer}
+#lobby.out{opacity:0;pointer-events:none}
+#lobby .logo{font-size:64px;font-weight:bold;color:var(--red);letter-spacing:-2px;opacity:0;transition:opacity 1.2s ease, transform 1.2s ease;transform:translateY(14px)}
+#lobby .l2{font-size:15px;color:var(--sub);letter-spacing:6px;text-transform:uppercase;opacity:0;transition:opacity 1.2s ease .2s}
+#lobby .greet{font-size:30px;font-weight:300;opacity:0;transition:opacity 1.2s ease;margin-top:18px}
+#lobby .date{font-size:15px;color:var(--mut);opacity:0;transition:opacity 1.2s ease}
+#lobby .hint{position:absolute;bottom:26px;font-size:12px;color:var(--sub);opacity:0;transition:opacity 1s ease 1.5s}
+#lobby.s1 .logo{opacity:1;transform:none}#lobby.s1 .l2{opacity:1}#lobby.s1 .hint{opacity:.8}
+#lobby.s2 .greet{opacity:1}
+#lobby.s3 .date{opacity:1}
+#lobby .door{position:absolute;top:0;bottom:0;width:50.5%;background:#0E0609;transition:transform 1.4s cubic-bezier(.7,0,.3,1)}
+#lobby .dl{left:0;border-right:1px solid rgba(234,0,41,.35)}#lobby .dr{right:0;border-left:1px solid rgba(234,0,41,.35)}
+#lobby.s2 .dl{transform:translateX(-101%)}#lobby.s2 .dr{transform:translateX(101%)}
+/* ===== SCENE (animierter Hintergrund) ===== */
+#scene{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+#sky{position:absolute;inset:0;z-index:0;transition:background 1.6s linear}
+#stars{position:absolute;inset:0 0 32% 0;z-index:0;transition:opacity 2s}
+.st{position:absolute;background:#fff;border-radius:50%;animation:tw 4s infinite}
+@keyframes tw{0%,100%{opacity:.95}50%{opacity:.2}}
+#sun{position:absolute;z-index:0;width:76px;height:76px;border-radius:50%;background:radial-gradient(circle,#FFF6D8 0%,#FFD978 45%,rgba(255,180,80,0) 72%);box-shadow:0 0 90px 42px rgba(255,190,90,.32);transition:opacity 2s}
+#moon{position:absolute;z-index:0;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 38% 38%,#F4F1E6,#C6C1B0);box-shadow:0 0 50px 18px rgba(215,222,255,.18);transition:opacity 2s}
+#hglow{position:absolute;left:0;right:0;bottom:23%;height:26%;z-index:1;background:linear-gradient(180deg,rgba(255,128,58,0),rgba(255,128,58,.42));opacity:0;transition:opacity 2s;mix-blend-mode:screen}
+#clouds{position:absolute;inset:0 0 30% 0;z-index:1;color:#fff;opacity:calc(.05 + .24*(1 - var(--nf)))}
+.cl{position:absolute;animation:drift linear infinite}
+@keyframes drift{from{transform:translateX(-24vw)}to{transform:translateX(116vw)}}
+#cityfar{position:absolute;left:0;right:0;bottom:23%;height:28%;z-index:2;opacity:.8}
+#citynear{position:absolute;left:0;right:0;bottom:21%;height:38%;z-index:3}
+#cityfar svg,#citynear svg{width:100%;height:100%;display:block}
+#citynear .wins{opacity:var(--litw)}
+.w{fill:#FFD98A;animation:flk 9s infinite}
+@keyframes flk{0%,100%{fill-opacity:.95}50%{fill-opacity:.4}}
+.bcn{fill:#FF4D5E;animation:bcnk 2.6s infinite}
+@keyframes bcnk{0%,100%{fill-opacity:1}50%{fill-opacity:.1}}
+#mull{position:absolute;inset:0 0 21% 0;z-index:4;background:repeating-linear-gradient(90deg,rgba(5,3,8,0) 0 calc(20% - 7px),rgba(7,4,10,.9) calc(20% - 7px) 20%)}
+#mull::before{content:"";position:absolute;inset:0;background:linear-gradient(200deg,rgba(120,180,200,.05),rgba(10,6,12,.28))}
+#mull::after{content:"";position:absolute;left:0;right:0;top:44%;height:9px;background:rgba(7,4,10,.9)}
+#floor{position:absolute;left:0;right:0;bottom:0;height:21%;z-index:5;background:linear-gradient(180deg,#100815,#070409 60%,#05030a)}
+#floor::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(150,190,220,calc(.04 + .09*(1 - var(--nf)))),transparent 55%)}
+#vig{position:absolute;inset:0;z-index:6;background:radial-gradient(ellipse at 50% 42%,transparent 52%,rgba(0,0,0,.6) 100%)}
+/* ===== HEADER ===== */
+header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:11px 20px;background:linear-gradient(180deg,rgba(8,4,10,.9),rgba(8,4,10,.68));backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-weight:bold;font-size:20px;color:var(--red)}
+.brand small{color:var(--mut);font-weight:normal;font-size:12px;letter-spacing:3px;margin-left:10px;text-transform:uppercase}
+.huts{display:flex;border:1px solid var(--line);border-radius:24px;overflow:hidden;margin-left:auto}
+.huts button{background:none;border:none;color:var(--mut);padding:8px 16px;font-size:12.5px}
+.huts button.on{background:var(--red);color:#fff;font-weight:bold}
+#clock{font-size:12.5px;color:var(--mut);min-width:140px;text-align:right}
+#hutline{position:relative;z-index:20;padding:8px 22px;font-size:12.5px;color:var(--mut);border-bottom:1px solid var(--line);background:rgba(20,9,14,.55);backdrop-filter:blur(4px)}
+#hutline b{color:var(--teal)}
+/* ===== VIEWS ===== */
+.view{display:none;position:relative;z-index:2}
+.view.on{display:block;animation:enter .6s ease}
+@keyframes enter{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+/* ===== HUB ===== */
+#greetcard{margin:30px auto 0;width:fit-content;max-width:92vw;text-align:center;background:rgba(8,4,10,.32);border:1px solid var(--line);border-radius:16px;padding:14px 30px;backdrop-filter:blur(3px)}
+#greetcard h1{font-size:27px;font-weight:300}
+#greetcard p{color:var(--mut);font-size:13px;margin-top:5px}
+#doors{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;align-items:flex-end;padding:30px 20px 50px;perspective:1100px;position:relative;z-index:3}
+.door{width:128px;cursor:pointer;text-align:center;transition:transform .3s}
+.dbody{position:relative;height:182px;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,rgba(49,23,31,.93),rgba(28,13,19,.95));border:1px solid var(--line);border-bottom:3px solid #1b0d13;padding-top:15px;transition:border-color .3s,box-shadow .3s,transform .45s;transform-style:preserve-3d;box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.door:hover .dbody{border-color:var(--teal);box-shadow:0 0 28px rgba(100,170,178,.28);transform:rotateY(-13deg)}
+.door.red:hover .dbody{border-color:var(--red);box-shadow:0 0 28px rgba(234,0,41,.32)}
+.dlight{position:absolute;top:0;left:12%;right:12%;height:4px;border-radius:0 0 4px 4px;background:#3a2a30;transition:all .3s}
+.door:hover .dlight{background:#9fe3d8;box-shadow:0 4px 18px rgba(120,220,200,.5)}
+.door.red:hover .dlight{background:#ff90a2;box-shadow:0 4px 18px rgba(255,80,110,.5)}
+.dnm{font-size:12.5px;font-weight:bold;margin-top:8px}
+.drl{font-size:10.5px;color:var(--sub);margin-top:1px;padding:0 4px}
+.plate{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:2px;color:#B89A6A;border:1px solid rgba(184,154,106,.45);border-radius:3px;padding:2px 7px;background:rgba(0,0,0,.25);white-space:nowrap}
+.dhandle{position:absolute;right:9px;top:53%;width:4px;height:22px;border-radius:2px;background:#B89A6A;opacity:.8}
+.door.board{width:226px}
+.door.board .dbody{background:linear-gradient(180deg,rgba(22,17,30,.93),rgba(13,10,19,.95))}
+#rec{position:relative;z-index:3;max-width:700px;margin:20px auto 6px;padding:0 16px;transition:max-width .6s ease}
+.counter{position:relative;background:var(--glass);backdrop-filter:blur(10px);border:1px solid rgba(100,170,178,.35);border-radius:20px;padding:18px 20px;box-shadow:0 20px 55px rgba(0,0,0,.55)}
+.rwho{display:flex;gap:14px;align-items:center}
+.rwho h2{font-size:16px}
+.rwho .so{font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.45}
+.tri{display:flex;gap:8px;margin-top:14px}
+.tri textarea{flex:1;background:rgba(31,15,21,.85);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:11px 13px;font-size:14px;resize:none;height:54px;font-family:inherit}
+.tri button{background:var(--red);border:none;color:#fff;border-radius:12px;padding:0 18px;font-weight:bold;font-size:15px}
+/* Sophie-Gespräch direkt in der Lobby: Tresen wächst, Chat klappt auf */
+#hub.schat #rec{max-width:980px}
+#hub.schat .tri,#hub.schat #prop,#hub.schat #famline,#hub.schat .btnrow{display:none}
+#lchat{display:none;margin-top:14px;animation:enter .5s ease}
+#hub.schat #lchat{display:block}
+.lcbar{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--mut);margin-bottom:10px}
+#lslot{display:flex;min-width:0}
+#lslot .rchat{height:min(62vh,620px);width:100%}
+#prop{margin-top:14px}
+.propbox{background:rgba(31,15,21,.72);border:1px solid var(--line);border-radius:14px;padding:14px}
+.propbox .sb{font-size:13.5px;line-height:1.55}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;justify-content:center}
+.chip{width:72px;text-align:center;cursor:pointer;opacity:.38;filter:grayscale(.75);transition:all .25s;font-size:10px;color:var(--mut)}
+.chip.on{opacity:1;filter:none;color:var(--txt)}
+.chip .av{transition:box-shadow .25s}
+.chip.on .av{box-shadow:0 0 16px rgba(100,170,178,.55)}
+.chip div{margin-top:3px}
+.btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+#hubfoot{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:22px 16px calc(18px + env(safe-area-inset-bottom));}
+#hubfoot button{background:rgba(8,4,10,.45);border:1px solid var(--line);color:var(--mut);border-radius:999px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
+#hubfoot button:hover{color:var(--txt);border-color:var(--teal)}
+.btn{background:none;border:1px solid var(--line);color:var(--mut);border-radius:10px;padding:8px 12px;font-size:12.5px}
+.btn:hover{border-color:var(--teal);color:var(--txt)}
+.btn.on{border-color:var(--teal);color:#fff}
+.btn.r{border-color:rgba(234,0,41,.5);color:#FF7088}
+.btn.go{background:var(--red);border-color:var(--red);color:#fff;font-weight:bold}
+.btn:disabled{opacity:.45;cursor:default}
+/* ===== TO-DO PANEL ===== */
+#todoTab{position:fixed;right:0;top:38%;z-index:46;background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--line);border-right:none;border-radius:12px 0 0 12px;color:var(--mut);padding:14px 9px;font-size:12px;letter-spacing:2px;writing-mode:vertical-rl;text-orientation:mixed;cursor:pointer;transition:all .25s;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+#todoTab:hover{color:var(--txt);border-color:var(--teal)}
+#todoTab .cnt{background:var(--red);color:#fff;border-radius:9px;font-size:10.5px;font-weight:bold;padding:5px 2px;margin-top:8px;letter-spacing:0;writing-mode:horizontal-tb;display:inline-block;min-width:18px;text-align:center}
+#todoPanel{position:fixed;top:0;right:0;bottom:0;width:min(370px,94vw);z-index:55;background:rgba(13,6,11,.97);backdrop-filter:blur(14px);border-left:1px solid var(--line);transform:translateX(102%);transition:transform .38s cubic-bezier(.2,.9,.3,1);display:flex;flex-direction:column;box-shadow:-18px 0 55px rgba(0,0,0,.5)}
+#todoPanel.open{transform:none}
+.tdhead{display:flex;align-items:center;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.tdhead h2{font-size:16px;flex:1}
+.tdhead .x{background:none;border:none;color:var(--sub);font-size:20px}
+.tdbody{flex:1;overflow-y:auto;padding:14px 16px;scrollbar-width:thin}
+.tdlist{background:rgba(31,15,21,.66);border:1px solid var(--line);border-radius:13px;margin-bottom:12px;overflow:hidden}
+.tdlh{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none}
+.tdlh:hover{background:rgba(255,255,255,.03)}
+.tdlh .chv{width:14px;color:var(--sub);font-size:10px;transition:transform .15s}
+.tdlist.cls .chv{transform:rotate(-90deg)}
+.tdlh b{flex:1;font-size:13.5px}
+.tdlh .lc{font-size:11px;color:var(--sub);background:rgba(255,255,255,.06);border-radius:9px;padding:2px 8px}
+.tdlh .del{background:none;border:none;color:var(--sub);font-size:13px;opacity:.6}
+.tdlh .del:hover{color:#FF7088;opacity:1}
+.tdlb{padding:2px 12px 10px}
+.tdlist.cls .tdlb{display:none}
+.tditem{display:flex;align-items:flex-start;gap:9px;padding:6px 2px;border-radius:7px}
+.tditem:hover{background:rgba(255,255,255,.03)}
+.tditem input[type=checkbox]{width:15px;height:15px;margin-top:2px;accent-color:var(--red);cursor:pointer;flex:0 0 auto}
+.tditem .tx{flex:1;font-size:13px;line-height:1.5;color:var(--txt)}
+.tditem.done .tx{text-decoration:line-through;color:var(--sub)}
+.tditem .del{background:none;border:none;color:var(--sub);font-size:12px;visibility:hidden}
+.tditem:hover .del{visibility:visible}
+.tditem .del:hover{color:#FF7088}
+.tdbadge{display:inline-block;font-size:9px;font-weight:bold;color:var(--teal);background:rgba(100,170,178,.16);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;letter-spacing:.5px}
+.tddate{font-size:10px;color:var(--sub);margin-left:6px}
+.tdadd{display:flex;gap:6px;margin-top:7px}
+.tdadd input{flex:1;background:#1F0F15;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:7px 10px;font-size:12.5px}
+.tdadd input:focus{outline:none;border-color:var(--teal)}
+.tdfoot{display:flex;gap:8px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+.tdempty{color:var(--sub);font-size:12px;font-style:italic;padding:5px 2px}
+.tdrn{font-family:inherit;font-size:13.5px;font-weight:bold;background:#1F0F15;border:1px solid var(--teal);border-radius:6px;color:var(--txt);padding:3px 7px;flex:1;min-width:0}
+.tdprop{background:rgba(31,15,21,.85);border:1px solid rgba(100,170,178,.5);border-radius:12px;padding:12px;margin:8px 0;font-size:13px}
+.tdprop label{display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer;font-size:13px;color:var(--txt);line-height:1.5}
+.tdprop input[type=checkbox]{width:15px;height:15px;margin-top:2px;accent-color:var(--red)}
+@media(max-width:880px){#todoTab{top:auto;bottom:90px}}
+/* ===== RAUM / MEETING ===== */
+.rtop{display:flex;align-items:center;gap:14px;padding:12px 20px;position:relative;z-index:4;flex-wrap:wrap}
+.back{background:var(--glass);backdrop-filter:blur(6px);border:1px solid var(--line);color:var(--mut);border-radius:10px;padding:8px 14px;font-size:13px}
+.back:hover{border-color:var(--teal);color:#fff}
+.rtitle{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
+.rwrap{position:relative;z-index:3;display:flex;gap:18px;max-width:1100px;margin:4px auto 26px;padding:0 16px;align-items:stretch;min-height:calc(100vh - 230px)}
+.rcard{width:300px;flex:0 0 300px;background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px;padding:20px;text-align:center;height:fit-content}
+.rcard .quote{font-style:italic;color:#E0DCDD;margin:10px 0 4px}
+.rcard .desc{font-size:13px;color:var(--mut);line-height:1.55;margin-top:8px}
+.rchat{flex:1;display:flex;flex-direction:column;background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-width:0}
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:9px;min-height:240px}
+.m{max-width:86%;padding:9px 13px;border-radius:13px;font-size:13.5px;line-height:1.55;white-space:pre-wrap}
+.m.u{align-self:flex-end;background:var(--teal2);color:#fff}
+.m.a{align-self:flex-start;background:rgba(49,23,31,.92);border:1px solid var(--line)}
+.m.t{align-self:flex-start;color:var(--sub);font-style:italic;font-size:12.5px;background:none;padding:2px 4px}
+.m.mara{align-self:flex-start;border:1px solid rgba(234,0,41,.55);background:rgba(38,8,15,.92);color:#FFD9DF;display:flex;gap:10px;align-items:flex-start}
+.mwho{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--sub);margin:3px 0 -3px}
+.rstarts{display:flex;gap:6px;overflow-x:auto;padding:8px 10px 0;scrollbar-width:thin}
+.rstarts button{flex:0 0 auto;background:rgba(31,15,21,.85);border:1px solid var(--line);color:var(--mut);border-radius:9px;padding:7px 10px;font-size:12px;white-space:nowrap}
+.rstarts button:hover{border-color:var(--red);color:var(--txt)}
+.crow{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);margin-top:8px}
+.crow textarea{flex:1;background:rgba(36,18,24,.9);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:9px 11px;font-size:13.5px;resize:none;height:44px;font-family:inherit}
+.crow button{background:var(--red);border:none;color:#fff;border-radius:10px;padding:0 16px;font-weight:bold;font-size:15px}
+.keynote{font-size:11.5px;color:var(--sub);padding:0 12px 10px;line-height:1.5}
+.rdecor{position:fixed;left:0;right:0;bottom:0;height:48vh;z-index:1;pointer-events:none;opacity:.5}
+.rdecor svg{width:100%;height:100%;display:block}
+#mtable{position:relative;z-index:3;max-width:860px;margin:0 auto;height:150px}
+#mtable svg.tbl{position:absolute;left:0;right:0;bottom:0;width:100%;height:84px}
+.seat{position:absolute;text-align:center;font-size:10.5px;color:var(--mut);transform:translateX(-50%)}
+.seat div{margin-top:2px}
+#mwrap{position:relative;z-index:3;display:flex;max-width:920px;margin:10px auto 26px;padding:0 16px;min-height:calc(100vh - 400px)}
+/* ===== MARA KNOCK ===== */
+#knock{position:fixed;right:18px;bottom:18px;z-index:60;width:336px;max-width:92vw;background:rgba(26,6,12,.97);border:1px solid rgba(234,0,41,.6);border-radius:16px;padding:14px;transform:translateY(150%);transition:transform .5s cubic-bezier(.2,.9,.3,1.08);box-shadow:0 18px 55px rgba(0,0,0,.65)}
+#knock.show{transform:none}
+#knock .kc{display:flex;gap:12px;align-items:flex-start}
+#knock b{color:#FF7088;font-size:13.5px}
+#knock p{font-size:12.5px;color:var(--mut);margin:4px 0 2px;line-height:1.5}
+/* ===== MODAL / SONSTIGES ===== */
+#ovl{position:fixed;inset:0;background:rgba(8,3,6,.84);z-index:50;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:38px 16px}
+#ovl.show{display:flex}
+.panel{background:var(--dark);border:1px solid var(--line);border-radius:18px;max-width:620px;width:100%;padding:26px;position:relative}
+.panel .x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--sub);font-size:20px}
+.panel h2{font-size:20px;margin:0}
+.pill{display:inline-block;background:rgba(100,170,178,.16);color:var(--teal);font-size:11px;padding:3px 10px;border-radius:10px;margin:6px 0}
+.pill.red{background:rgba(234,0,41,.16);color:#FF5C77}
+.desc{font-size:13.5px;color:var(--mut);line-height:1.55}
+.sec{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.sec h3{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);margin-bottom:8px}
+.qs{margin:0}
+.qs li{list-style:none;font-size:13px;color:var(--mut);padding:5px 0 5px 14px;border-left:2px solid var(--teal2);margin:6px 0;text-align:left}
+.note{font-size:12px;color:var(--sub);margin-top:10px;line-height:1.5}
+.fok li{list-style:none;font-size:13px;color:var(--mut);padding:5px 0;display:flex;gap:8px;align-items:baseline}
+.fok li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--red);flex:0 0 7px}
+.fok li button{margin-left:auto;background:none;border:none;color:var(--sub);font-size:13px}
+.addf{display:flex;gap:6px;margin-top:8px}
+.addf input{flex:1;background:#1F0F15;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:7px 10px;font-size:13px}
+.gov .lvl{display:flex;gap:10px;justify-content:center;margin:8px 0;flex-wrap:wrap}
+.gbox{background:#1F0F15;border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:12.5px;text-align:center;min-width:150px}
+.gbox b{display:block;font-size:13px}
+.gbox small{color:var(--sub)}
+.gbox.hl{border-color:var(--red)}
+.gbox.me{border-color:var(--teal)}
+.gline{text-align:center;color:var(--sub);font-size:14px;line-height:1}
+.radrow{display:flex;align-items:center;gap:10px;margin:8px 0}
+.radrow span{flex:1;font-size:13.5px;color:var(--mut)}
+.radrow .lv{display:flex;gap:5px}
+.radrow .lv b{width:22px;height:14px;border-radius:4px;background:#1F0F15;border:1px solid var(--line);cursor:pointer}
+.radrow .lv b.on1{background:var(--teal2);border-color:var(--teal2)}
+.radrow .lv b.on2{background:#B57E24;border-color:#B57E24}
+.radrow .lv b.on3{background:var(--red);border-color:var(--red)}
+#sopwarn{display:none;margin-top:12px;background:rgba(234,0,41,.1);border:1px solid rgba(234,0,41,.4);border-radius:10px;padding:10px 12px;font-size:13px;color:#FFB3C0}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--teal2);color:#fff;padding:11px 20px;border-radius:12px;font-size:13.5px;transition:transform .35s ease;z-index:99;max-width:90vw}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.set input,.set select{width:100%;background:#1F0F15;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:9px 11px;font-size:13px;margin:6px 0}
+.pst{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);padding:3px 0;border-bottom:1px solid var(--line)}
+.av{position:relative;display:inline-block;border-radius:50%;overflow:hidden;background:#261019;flex:0 0 auto}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.av svg{display:block;width:100%;height:100%}
+.led{fill:#7BC9A0;animation:bcnk 1.8s infinite}
+@media(max-width:880px){
+.rwrap{flex-direction:column;min-height:0}
+.rcard{width:auto;flex:none}
+#doors{gap:12px;padding-top:22px}
+.door{width:102px}.dbody{height:152px}
+.door.board{width:170px}
+#greetcard h1{font-size:22px}
+#mtable{height:128px}
+}
+#famline{margin-top:10px;font-size:12.5px;color:var(--mut);line-height:1.55}
+#famline b{color:var(--teal)}
+#famline .fsdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.famgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.famgrid .fbox{background:rgba(31,15,21,.72);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;line-height:1.6}
+.famgrid .fbox h4{margin:0 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal)}
+.famgrid .fbox small{color:var(--sub)}
+.fsact{background:rgba(31,15,21,.85);border:1px solid rgba(100,170,178,.5);border-radius:12px;padding:12px;margin:8px 0;font-size:13px}
+.fsact b{color:var(--teal)}
+@media(max-width:700px){.famgrid{grid-template-columns:1fr}}
+.micb.rec{background:#EA0029!important;color:#fff;animation:micpulse 1.1s ease-in-out infinite}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(234,0,41,.55)}50%{box-shadow:0 0 0 9px rgba(234,0,41,0)}}
+
+/* ===== ZUGRIFFSSCHUTZ ===== */
+#lock{position:fixed;inset:0;z-index:300;background:radial-gradient(circle at 50% 30%,#1a0c13,#05030a);display:flex;align-items:center;justify-content:center;transition:opacity .6s}
+#lock.off{opacity:0;pointer-events:none}
+.lkbox{display:flex;flex-direction:column;gap:12px;width:min(330px,86vw);text-align:center}
+.lkbox .lklogo{font-size:46px;font-weight:bold;color:var(--red);letter-spacing:-1px}
+.lkbox .lksub{font-size:12px;color:var(--sub);letter-spacing:4px;text-transform:uppercase;margin-bottom:8px}
+.lkbox input[type=password]{background:#1F0F15;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:13px;font-size:16px;text-align:center}
+.lkbox .lkrem{font-size:12.5px;color:var(--mut);display:flex;gap:7px;justify-content:center;align-items:center;cursor:pointer}
+.lkbox>button{background:var(--red);border:none;color:#fff;border-radius:10px;padding:13px;font-weight:bold;font-size:15px}
+#lkmsg{font-size:12.5px;min-height:16px;color:var(--sub)}
+/* ===== iPHONE / PWA ===== */
+@media(max-width:540px){
+ body{min-height:100dvh}
+ header{flex-wrap:wrap;row-gap:6px;padding-top:calc(8px + env(safe-area-inset-top))}
+ input,select,textarea{font-size:16px!important}
+ .door{width:84px}.dbody{height:126px}
+ .door.board{width:142px}
+ #doors{gap:9px;padding:14px 8px 120px}
+ #greetcard h1{font-size:19px}
+ #rec{margin-top:8px;padding:0 10px}
+ .rwrap{min-height:calc(100dvh - 200px);padding:0 8px}
+ #lslot .rchat{height:calc(100dvh - 320px)}
+ #mwrap{padding:0 8px}
+ #mtable{height:100px}
+ #todoPanel{width:100vw}
+ #todoTab{bottom:calc(16px + env(safe-area-inset-bottom))}
+ .crow{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+ .crow button,.tri button{min-width:46px;min-height:44px}
+ .btn{min-height:38px}
+ .rtop{padding-top:calc(6px + env(safe-area-inset-top))}
+}
+</style>
+</head>
+<body>
+
+<div id="lock"><div class="lkbox"><div class="lklogo">DREOS</div><div class="lksub">Executive Office · privat</div><input type="password" id="lkpass" placeholder="Passphrase" autocomplete="current-password" onkeydown="if(event.key==='Enter')unlock()"><label class="lkrem"><input type="checkbox" id="lkrem" checked> Auf diesem Gerät angemeldet bleiben</label><button id="lkbtn" onclick="unlock()">Entsperren</button><div id="lkmsg"></div></div></div>
+<div id="lobby">
+<div class="door dl"></div><div class="door dr"></div>
+<div class="logo">eos</div>
+<div class="l2">DREOS · Virtual Office</div>
+<div class="greet" id="lgreet"></div>
+<div class="date" id="ldate"></div>
+<div class="hint">Klicken zum Betreten</div>
+</div>
+
+<div id="scene">
+<div id="sky"></div><div id="stars"></div>
+<div id="sun"></div><div id="moon"></div>
+<div id="hglow"></div><div id="clouds"></div>
+<div id="cityfar"></div><div id="citynear"></div>
+<div id="mull"></div><div id="floor"></div><div id="vig"></div>
+</div>
+
+<header>
+<div class="brand">eos<small>DREOS Virtual Office</small></div>
+<div class="huts">
+<button id="hutDID" onclick="setHut('DID')">DID · Director Ops</button>
+<button id="hutFS" onclick="setHut('FS')">FS · Geschäftsführer</button>
+</div>
+<button class="btn" id="spkb" onclick="voiceToggle()" title="Vorlesen an/aus"></button>
+<button class="btn" id="lapseb" onclick="toggleLapse()" title="Tagesverlauf im Zeitraffer erleben">⏩ Zeitraffer</button>
+<div id="clock"></div>
+</header>
+<div id="hutline"></div>
+
+<section id="hub" class="view">
+<div id="greetcard"><h1 id="ghead"></h1><p id="gsub"></p></div>
+<div id="rec">
+<div class="counter">
+<div class="rwho" id="recwho"></div>
+<div class="tri"><textarea id="triq" placeholder="Worum geht es, Daniel? Ich stelle dir die richtige Besetzung zusammen…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askSophie()}"></textarea><button class="micb" data-f="triq" onclick="micToggle('triq')" title="Diktieren">🎤</button><button onclick="askSophie()" title="An Sophie">➤</button></div>
+<div id="prop"></div>
+<div id="famline"></div>
+<div class="btnrow"><button class="btn" onclick="enterRoom('sophie')">💬 Mit Sophie sprechen</button><button class="btn" onclick="todoToggle(true)">✅ To-dos</button><button class="btn" onclick="openFam()">🏠 Familie</button></div>
+<div id="lchat"><div class="lcbar"><span>Gespräch mit Sophie · direkt am Empfang</span><button class="btn" onclick="leaveRoom()">Gespräch beenden</button></div><div id="lslot"></div></div>
+</div>
+</div>
+<div id="doors"></div>
+<div id="hubfoot"><button onclick="openRadar()">📡 Muster-Radar</button><button onclick="openGov()">🗺️ Governance</button><button onclick="openFok()">🎯 Fokusthemen</button><button onclick="openSet()">⚙️ Einstellungen</button><button onclick="openInfo()">ℹ️ Info</button></div>
+</section>
+
+<section id="room" class="view">
+<div class="rtop"><button class="back" onclick="leaveRoom()">← Office</button><div class="rtitle" id="rtitle"></div></div>
+<div class="rwrap"><aside class="rcard" id="rcard"></aside><div id="rslot" style="flex:1;display:flex;min-width:0"></div></div>
+<div class="rdecor" id="rdecor"></div>
+</section>
+
+<section id="meet" class="view">
+<div class="rtop"><button class="back" onclick="leaveRoom()">← Office</button><div class="rtitle" id="mtitle"></div></div>
+<div id="mtable"></div>
+<div id="mwrap"><div id="mslot" style="flex:1;display:flex;min-width:0"></div></div>
+</section>
+
+<div class="rchat" id="chatbox" style="display:none">
+<div class="msgs" id="msgs"></div>
+<div class="rstarts" id="rstarts"></div>
+<div class="crow"><textarea id="ci" placeholder="Schreib hier… (oder 🎤 diktieren)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea><button class="micb" data-f="ci" onclick="micToggle('ci')" title="Diktieren – sendet automatisch, wenn du aufhörst zu sprechen">🎤</button><button onclick="sendMsg()" title="Senden">➤</button></div>
+<div class="keynote"></div>
+</div>
+
+<div id="knock"><div class="kc"><span id="kav"></span><div><b>Mara klopft an.</b><p id="ktxt"></p><div class="btnrow"><button class="btn r" onclick="maraIn()">Lass sie rein</button><button class="btn" onclick="maraOut()">Jetzt nicht</button></div></div></div></div>
+
+<div id="ovl" onclick="if(event.target===this)closeOvl()"><div class="panel" id="panel"></div></div>
+<div id="toast"></div>
+
+<button id="todoTab" onclick="todoToggle()" title="To-do-Listen ein-/ausblenden">TO-DOS<span class="cnt" id="todoCnt">0</span></button>
+<div id="todoPanel">
+<div class="tdhead"><h2>✅ Meine To-dos</h2><button class="btn" onclick="todoAddList()">+ Liste</button><button class="x" onclick="todoToggle(false)">×</button></div>
+<div class="tdbody" id="tdbody"></div>
+<div class="tdfoot"><button class="btn" id="tdHideBtn" onclick="todoHideDone()"></button><span style="margin-left:auto;font-size:11px;color:var(--sub)" id="tdStat"></span></div>
+</div>
+
+<script>
+/* ================= DATEN ================= */
+const CHARS=[
+{id:"sophie",name:"Sophie Janssen",role:"Personal Assistant",color:"#64AAB2",desk:true,
+ persona:"Organisiert, diskret, fürsorglich-direkt. Die Einzige, die beruflich und privat denkt: Termine, Energie, Familie, Erholung. Dein Frühwarnsystem gegen Überlastung.",
+ quote:"Ich halte dir den Rücken frei – auch privat.",
+ fragen:["Was steht heute wirklich an?","Wo ist deine Energie gerade?","Was kannst du heute abgeben?","Wann ist heute Schluss?"],
+ starts:["Sophie, plane meinen Tag mit mir","Sophie, was steht bei uns privat an?","Sophie, trag was in die ROH-App ein","Sophie, Berufliches und Privates ausbalancieren"],
+ skin:["#F6DCC0","#E6BF9C"],hair:["#8E6E45","#6B4F2E"],eye:["#8A613A","#54371D"],cloth:"#2F7C85",style:"long",brow:"soft",mouth:"smile",extra:"shirt"},
+{id:"vera",name:"Dr. Vera Sandholm",role:"Executive Coach",color:"#64AAB2",
+ persona:"Ruhig, präzise, fragt statt sagt. Lässt Pausen stehen, bis du selbst die Antwort findest.",
+ quote:"Was beschäftigt dich wirklich?",
+ fragen:["Wo blockierst du dich selbst?","Wo denkst du zu klein?","Wo denkst du zu operativ?","Was solltest du loslassen?"],
+ starts:["Vera, lass uns meine Woche reflektieren","Vera, ich will ein Führungsmuster besprechen","Vera, challenge meine Selbstwahrnehmung"],
+ skin:["#F2D8BC","#E2BB97"],hair:["#DCD8DA","#B7B0B4"],eye:["#6E7E8A","#3E4C57"],cloth:"#2F7C85",style:"bob",brow:"grey",mouth:"soft",extra:"glassesThin,rollkragen"},
+{id:"henrik",name:"Henrik Lund",role:"Organisationsarchitekt",color:"#64AAB2",
+ persona:"Nüchtern, denkt in Zielbildern, skizziert beim Sprechen. Interessiert sich nie für den Einzelfall.",
+ quote:"Zeig mir das System, nicht das Problem.",
+ fragen:["Welche Struktur skaliert?","Wo entstehen Flaschenhälse?","Welche Rolle fehlt?","Welche Verantwortung liegt falsch?"],
+ starts:["Henrik, lass uns ein Zielbild bauen","Henrik, Orgdesign-Review für einen Bereich","Henrik, wo ist mein Operating Model schwach?"],
+ skin:["#EFCFA9","#DDB78C"],hair:["#C0B098","#9A8A6C"],eye:["#5E7286","#33455A"],cloth:"#505F6E",style:"short",brow:"soft",mouth:"soft",extra:"shirt"},
+{id:"ingrid",name:"Ingrid Falk",role:"COO Advisor",color:"#64AAB2",
+ persona:"Hanseatisch trocken, zahlenfest, ungeduldig mit Anekdoten. Steuerung schlägt Stimmung.",
+ quote:"Welche Kennzahl beweist das?",
+ fragen:["Welche Kennzahlen fehlen?","Wo verlieren wir Produktivität?","Wo ist die Steuerung unzureichend?","Welche Hebel haben den größten Effekt?"],
+ starts:["Ingrid, KPI-Review vorbereiten","Ingrid, Produktivitätshebel identifizieren","Ingrid, challenge meine Steuerungslogik"],
+ skin:["#F4DAC0","#E4BE9E"],hair:["#84412E","#5E2C1E"],eye:["#54663A","#2E3D1E"],cloth:"#505F6E",style:"tied",brow:"soft",mouth:"soft",extra:"earring"},
+{id:"samuel",name:"Samuel Okafor",role:"Chief Talent Officer",color:"#64AAB2",
+ persona:"Warm, beobachtungsscharf, kennt jeden Namen. Sieht Menschen, bevor er Strukturen sieht.",
+ quote:"Wer wächst gerade – und wer nicht?",
+ fragen:["Wer hat Potenzial?","Wer blockiert Entwicklung?","Welche Führungskraft braucht Unterstützung?","Welche Nachfolge fehlt?"],
+ starts:["Samuel, Talent-Review strukturieren","Samuel, Nachfolgeplanung durchdenken","Samuel, eine Führungskraft entwickeln"],
+ skin:["#9A6433","#7C4D22"],hair:["#241712","#150D09"],eye:["#3E2A18","#1E130A"],cloth:"#64AAB2",style:"short",brow:"soft",mouth:"smile",extra:"beard"},
+{id:"carla",name:"Carla Mendes",role:"Transformation Director",color:"#64AAB2",
+ persona:"Energiegeladen, pragmatisch, allergisch gegen Folien-Transformation. Fragt immer nach Ownership.",
+ quote:"Wer trägt das wirklich?",
+ fragen:["Warum stockt die Veränderung?","Wo fehlt Ownership?","Welche Risiken werden unterschätzt?","Wie erhöhen wir Akzeptanz?"],
+ starts:["Carla, Transformations-Check für ein Programm","Carla, Ownership-Problem lösen","Carla, Akzeptanzstrategie bauen"],
+ skin:["#E0AC78","#CC9258"],hair:["#42302A","#2A1B16"],eye:["#54371D","#33200E"],cloth:"#EA0029",style:"curly",brow:"soft",mouth:"smile",extra:""},
+{id:"adrian",name:"Adrian Vogt",role:"Technology Advisor",color:"#64AAB2",
+ persona:"Leise, denkt in Architekturen und Folgekosten. Begeistert sich für Technologie, nie für Hypes.",
+ quote:"Was kostet diese Entscheidung in fünf Jahren?",
+ fragen:["Wo liefert KI echten Mehrwert?","Welche Architektur ist zukunftsfähig?","Welche Automatisierung lohnt sich?","Welche Entscheidung erzeugt Langzeitrisiken?"],
+ starts:["Adrian, KI-Use-Case bewerten","Adrian, Systementscheidung challengen","Adrian, Automatisierungspotenzial finden"],
+ skin:["#F0D2B2","#E0BA94"],hair:["#2A2026","#16100E"],eye:["#4E5A66","#2A343E"],cloth:"#3E4A57",style:"slick",brow:"soft",mouth:"soft",extra:"glassesRound,zip"},
+{id:"konstantin",name:"Konstantin Berg",role:"Stakeholder Advisor",color:"#64AAB2",
+ persona:"Diplomatisch, liest Räume und Interessen. Denkt zwei Züge voraus, spricht einen aus.",
+ quote:"Wem nützt das – und wer verliert?",
+ fragen:["Wer muss eingebunden werden?","Wer wird Widerstand leisten?","Welche Interessen wirken?","Welche Kommunikation erhöht die Erfolgswahrscheinlichkeit?"],
+ starts:["Konstantin, Stakeholder-Map für ein Thema","Konstantin, die Schweda-Konstellation durchdenken","Konstantin, Kommunikationsstrategie planen"],
+ skin:["#EDCDA9","#DCB489"],hair:["#A89EA2","#7E7378"],eye:["#5E6E7A","#36444E"],cloth:"#2B1B22",style:"sweep",brow:"grey",mouth:"soft",extra:"shirt,pocket"},
+{id:"mara",name:"Mara Adler",role:"Red Team",color:"#EA0029",red:true,
+ persona:"Unbequem, trocken, schonungslos – aber nie persönlich. Eröffnet grundsätzlich mit Widerspruch.",
+ quote:"Ich sag dir, warum das schiefgeht.",
+ fragen:["Warum könnte diese Entscheidung falsch sein?","Welche Annahmen sind nicht belegt?","Was wird übersehen?","Wo bist du voreingenommen?"],
+ starts:["Mara, Red-Team meine Entscheidung","Mara, Pre-Mortem durchführen","Mara, zerlege meine Annahmen"],
+ skin:["#F7E4D0","#E8CBAF"],hair:["#241820","#120A10"],eye:["#7A8470","#46503E"],cloth:"#15090E",style:"bobBangs",brow:"bold",mouth:"flat",extra:"redline"}
+];
+function CH(id){return CHARS.find(c=>c.id===id)}
+function fname(c){const p=c.name.split(" ");return p[0]==="Dr."?p[1]:p[0]}
+const ROOMNO={vera:"01",henrik:"02",ingrid:"03",samuel:"04",carla:"05",adrian:"06",konstantin:"07",mara:"08"};
+
+/* ================= PORTRAITS (lokal > gespeichert > Web > Illustration) ================= */
+const SUFFIX=", corporate headshot photo, looking at camera, studio lighting, dark burgundy blurred background, photorealistic, 85mm";
+const PHOTOS={
+sophie:["36 year old woman, dark blonde shoulder-length hair, middle part, warm smile, teal blazer, cream blouse",17],
+vera:["54 year old woman, silver grey bob, slim glasses, calm subtle smile, dark teal turtleneck",23],
+henrik:["47 year old man, ash blond short hair, side part, angular face, focused gaze, grey blazer, white shirt",31],
+ingrid:["50 year old woman, auburn hair tied back, sharp gaze, subtle smile, red stud earrings, dark grey blazer",43],
+samuel:["45 year old black man, short hair, full beard, warm smile, teal knit sweater",51],
+carla:["42 year old latin woman, dark curly hair, confident smile, red blazer, black top",67],
+adrian:["39 year old man, dark styled hair, round glasses, calm minimal smile, dark grey zip sweater",71],
+konstantin:["58 year old man, grey swept-back hair, diplomatic fine smile, dark suit, white shirt, red pocket square",83],
+mara:["44 year old woman, black bob, straight bangs, pale skin, strong eyebrows, direct neutral gaze, black top",97]};
+function purl(id){const p=PHOTOS[id];return "https://image.pollinations.ai/prompt/"+encodeURIComponent(p[0]+SUFFIX)+"?width=512&height=512&seed="+p[1]+"&nologo=true&model=flux"}
+let PQ=[],PBUSY=0;
+function avErr(img){const s=+(img.dataset.s||0),id=img.dataset.id;
+if(s===9){img.dataset.s=0;delete IMGS[id];img.src="Avatare/"+id+".jpg"}
+else if(s===0){img.dataset.s=1;img.src="Avatare/"+id+".png"}
+else if(s===1){img.dataset.s=2;img.onerror=null;img.removeAttribute("src");if(!PQ.includes(id)){PQ.push(id);pump()}}}
+function pump(){if(PBUSY>=1||!PQ.length)return;PBUSY++;loadP(PQ.shift(),0)}
+function loadP(id,att){
+if(IMGS[id]){apply(id,IMGS[id]);PBUSY--;pump();return}
+const url=purl(id),probe=new Image();
+probe.onload=()=>{apply(id,url);PSTAT[id]="✓ Web-Portrait geladen";PBUSY--;pump();
+const p2=new Image();p2.crossOrigin="anonymous";
+p2.onload=()=>{try{const cv=document.createElement("canvas");cv.width=p2.naturalWidth;cv.height=p2.naturalHeight;cv.getContext("2d").drawImage(p2,0,0);saveImg(id,cv.toDataURL("image/jpeg",0.85));PSTAT[id]="✓ Web-Portrait gespeichert"}catch(e){}};
+p2.src=url};
+probe.onerror=()=>{if(att<10){PSTAT[id]="… Generator-Warteschlange (Versuch "+(att+1)+" von 10)";setTimeout(()=>loadP(id,att+1),14000+6000*att)}else{PSTAT[id]="✗ Generator überlastet – beim nächsten Start neuer Versuch";PBUSY--;pump()}};
+PSTAT[id]=PSTAT[id]||"… lädt (Web)";probe.src=url}
+function apply(id,src){document.querySelectorAll('img[data-id="'+id+'"]').forEach(im=>{im.onerror=null;im.src=src})}
+function pOk(img){const s=img.dataset.s;PSTAT[img.dataset.id]=s==9?"✓ Gespeichertes Web-Portrait":s==2?"✓ Web-Portrait geladen":"✓ Lokales Bild geladen"}
+function avatar(c,size){const ca=IMGS[c.id];return `<span class="av" style="width:${size}px;height:${size}px;border:3px solid ${c.color}">${avSVG(c)}<img src="${ca||("Avatare/"+c.id+".jpg")}" alt="" data-id="${c.id}"${ca?' data-s="9"':""} onerror="avErr(this)" onload="pOk(this)"></span>`}
+function avSVG(c){
+const u=c.id,[s1,s2]=c.skin,[h1,h2]=c.hair,[i1,i2]=c.eye,ex=(c.extra||"").split(",");
+const HEAD="M100 36 C72 36 58 58 58 88 C58 110 66 130 82 141 C88 145 94 147.5 100 147.5 C106 147.5 112 145 118 141 C134 130 142 110 142 88 C142 58 128 36 100 36 Z";
+const SH="M28 220 Q34 176 72 166 L86 161 Q100 170 114 161 L128 166 Q166 176 172 220 Z";
+let back="",front="";
+if(c.style==="long"){back=`<path d="M100 26 C56 26 42 70 48 112 C52 142 58 162 64 172 L86 164 C72 142 68 112 70 92 C74 60 86 48 100 48 C114 48 126 60 130 92 C132 112 128 142 114 164 L136 172 C142 162 148 142 152 112 C158 70 144 26 100 26 Z" fill="url(#h${u})"/>`;
+front=`<path d="M100 44 C80 44 70 60 67 86 L73 90 C76 64 86 54 100 54 C114 54 124 64 127 90 L133 86 C130 60 120 44 100 44 Z" fill="${h2}"/>`}
+if(c.style==="bob"){back=`<path d="M100 28 C58 28 46 66 50 104 C52 126 57 142 64 152 L84 148 C72 130 68 104 70 88 C74 58 86 46 100 46 C114 46 126 58 130 88 C132 104 128 130 116 148 L136 152 C143 142 148 126 150 104 C154 66 142 28 100 28 Z" fill="url(#h${u})"/>`;
+front=`<path d="M100 42 C78 42 68 58 66 84 L74 86 C78 62 88 54 100 54 C112 54 122 62 126 86 L134 84 C132 58 122 42 100 42 Z" fill="${h2}"/>`}
+if(c.style==="bobBangs"){back=`<path d="M100 28 C58 28 46 66 50 106 C52 130 57 146 64 156 L84 150 C72 130 68 104 70 88 C74 58 86 46 100 46 C114 46 126 58 130 88 C132 104 128 130 116 150 L136 156 C143 146 148 130 150 106 C154 66 142 28 100 28 Z" fill="url(#h${u})"/>`;
+front=`<path d="M62 84 Q64 44 100 42 Q136 44 138 84 L138 92 L126 80 Q120 62 100 62 Q80 62 74 80 L62 92 Z" fill="${h2}"/>`}
+if(c.style==="short")front=`<path d="M58 90 Q56 36 100 34 Q144 36 142 90 Q138 48 100 46 Q62 48 58 90 Z" fill="url(#h${u})"/>`;
+if(c.style==="sweep")front=`<path d="M58 84 Q58 30 100 28 Q142 30 142 84 Q142 40 100 40 Q58 40 58 84 Z" fill="url(#h${u})"/>`;
+if(c.style==="slick")front=`<path d="M58 86 Q60 34 102 34 Q140 38 142 88 Q136 46 100 46 Q64 46 58 86 Z" fill="url(#h${u})"/>`;
+if(c.style==="tied"){back=`<path d="M100 30 C64 30 52 60 56 96 Q57 70 70 58 Q84 48 100 48 Q116 48 130 58 Q143 70 144 96 C148 60 136 30 100 30 Z" fill="url(#h${u})"/><circle cx="140" cy="42" r="11" fill="${h2}"/>`;
+front=`<path d="M60 88 Q60 40 100 38 Q140 40 140 88 Q136 50 100 48 Q64 50 60 88 Z" fill="url(#h${u})"/>`}
+if(c.style==="curly"){back=`<circle cx="64" cy="62" r="19" fill="${h1}"/><circle cx="88" cy="44" r="21" fill="${h1}"/><circle cx="116" cy="46" r="20" fill="${h1}"/><circle cx="136" cy="64" r="17" fill="${h1}"/><circle cx="58" cy="92" r="14" fill="${h2}"/><circle cx="142" cy="94" r="13" fill="${h2}"/><circle cx="54" cy="118" r="11" fill="${h2}"/><circle cx="146" cy="118" r="10" fill="${h2}"/>`;
+front=`<path d="M62 86 Q66 46 100 44 Q134 46 138 86 Q130 58 100 56 Q70 58 62 86 Z" fill="${h2}"/>`}
+let beard="";
+if(ex.includes("beard"))beard=`<path d="M66 100 Q68 134 100 138 Q132 134 134 100 L134 88 Q128 120 100 122 Q72 120 66 88 Z" fill="${h1}"/>`;
+let cloth=`<path d="${SH}" fill="${c.cloth}"/>`;
+if(ex.includes("shirt"))cloth+=`<path d="M86 161 Q100 172 114 161 L110 190 Q100 198 90 190 Z" fill="#F2EFEA"/>`;
+if(ex.includes("rollkragen"))cloth+=`<path d="M82 156 Q100 166 118 156 L118 176 Q100 184 82 176 Z" fill="${c.cloth}" stroke="#26646C" stroke-width="1.5"/>`;
+if(ex.includes("pocket"))cloth+=`<rect x="126" y="190" width="14" height="9" fill="#EA0029"/>`;
+if(ex.includes("redline"))cloth+=`<line x1="58" y1="198" x2="142" y2="183" stroke="#EA0029" stroke-width="3.5"/>`;
+if(ex.includes("zip"))cloth+=`<line x1="100" y1="168" x2="100" y2="220" stroke="#64AAB2" stroke-width="2.4"/>`;
+let brows="";
+if(c.brow==="bold")brows=`<path d="M68 87 L92 84.5 L92 88.5 L68 91 Z" fill="${h2}"/><path d="M108 84.5 L132 87 L132 91 L108 88.5 Z" fill="${h2}"/>`;
+else{const bc=c.brow==="grey"?h1:h2;brows=`<path d="M68 89 Q78 82 92 85.5 Q92 88.5 80 87 Q72 86.5 69 92 Z" fill="${bc}"/><path d="M108 85.5 Q122 82 132 89 Q131 92 120 87 Q112 88 108 88.5 Z" fill="${bc}"/>`}
+let mouth="";
+if(c.mouth==="smile")mouth=`<path d="M87 125 Q93.5 121.8 100 123.2 Q106.5 121.8 113 125 Q100 128.8 87 125 Z" fill="#C26E66"/><path d="M87 125 Q100 134 113 125 Q107 131 100 131.4 Q93 131.2 87 125 Z" fill="#D98E84"/><path d="M87 125 Q100 129.5 113 125" fill="none" stroke="#9A4A45" stroke-width="0.9" opacity="0.7"/>`;
+if(c.mouth==="soft")mouth=`<path d="M89 125 Q94.5 122.6 100 123.6 Q105.5 122.6 111 125 Q100 128 89 125 Z" fill="#BE6A64"/><path d="M89 125 Q100 131 111 125 Q105.5 128.6 100 128.8 Q94.5 128.6 89 125 Z" fill="#D18A80"/>`;
+if(c.mouth==="flat")mouth=`<path d="M88 126 Q94 123.6 100 124.8 Q106 123.4 112 125.5 Q100 128.6 88 126 Z" fill="#B85F5C"/><path d="M88 126 Q100 132.5 112 125.5 Q106 130 100 130.2 Q93.5 130.2 88 126 Z" fill="#CE8077"/>`;
+let glasses="";
+if(ex.includes("glassesThin"))glasses=`<circle cx="80" cy="97" r="10.5" fill="none" stroke="#64AAB2" stroke-width="1.6"/><circle cx="120" cy="97" r="10.5" fill="none" stroke="#64AAB2" stroke-width="1.6"/><line x1="90.5" y1="97" x2="109.5" y2="97" stroke="#64AAB2" stroke-width="1.6"/>`;
+if(ex.includes("glassesRound"))glasses=`<circle cx="80" cy="97" r="11.5" fill="none" stroke="#3E4A57" stroke-width="2"/><circle cx="120" cy="97" r="11.5" fill="none" stroke="#3E4A57" stroke-width="2"/><line x1="91.5" y1="97" x2="108.5" y2="97" stroke="#3E4A57" stroke-width="2"/>`;
+let earring=ex.includes("earring")?`<circle cx="59" cy="106" r="2.6" fill="#EA0029"/>`:"";
+function eye(cx){return `<path d="M${cx-10} 97 Q${cx} 90.5 ${cx+10} 97 Q${cx} 102.5 ${cx-10} 97 Z" fill="#FBF4EC"/><circle cx="${cx}" cy="97" r="4.7" fill="url(#i${u})"/><circle cx="${cx}" cy="97" r="2.1" fill="#161009"/><circle cx="${cx+1.6}" cy="95.2" r="1.1" fill="#FFF" opacity="0.85"/><path d="M${cx-10} 97 Q${cx} 90 ${cx+10} 97" fill="none" stroke="#4A3526" stroke-width="1.6" stroke-linecap="round"/><path d="M${cx-8} 99.5 Q${cx} 102.5 ${cx+8} 99.5" fill="none" stroke="#B9885E" stroke-width="0.9" opacity="0.55"/>`}
+return `<svg viewBox="0 0 200 220"><defs><clipPath id="c${u}"><circle cx="100" cy="104" r="98"/></clipPath><linearGradient id="s${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s1}"/><stop offset="1" stop-color="${s2}"/></linearGradient><linearGradient id="h${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${h1}"/><stop offset="1" stop-color="${h2}"/></linearGradient><radialGradient id="i${u}" cx="0.5" cy="0.45" r="0.6"><stop offset="0" stop-color="${i1}"/><stop offset="1" stop-color="${i2}"/></radialGradient></defs><circle cx="100" cy="104" r="98" fill="#261019"/><g clip-path="url(#c${u})">${back}<path d="M86 130 L86 164 Q100 172 114 164 L114 130 Z" fill="${s2}"/><ellipse cx="100" cy="138" rx="15" ry="8" fill="#000" opacity="0.18"/>${cloth}<path d="${HEAD}" fill="url(#s${u})"/><ellipse cx="100" cy="68" rx="19" ry="8" fill="#FFF" opacity="0.07"/><ellipse cx="74" cy="112" rx="7.5" ry="4.5" fill="#E2806A" opacity="0.18"/><ellipse cx="126" cy="112" rx="7.5" ry="4.5" fill="#E2806A" opacity="0.18"/><path d="M97 98 Q95.5 106 94.5 112" fill="none" stroke="#B9885E" stroke-width="2" stroke-linecap="round" opacity="0.45"/><path d="M94 114 Q100 118.5 106 114 Q103 117 100 117 Q97 117 94 114 Z" fill="#A06A42" opacity="0.55"/>${beard}${eye(80)}${eye(120)}${brows}${mouth}${glasses}${earring}${front}</g></svg>`}
+
+/* ================= ZUSTAND ================= */
+const HUTS={
+ DID:{label:"Director Operations · EOS DID GmbH",sub:"Operations-Steuerung · Produktivität · Transformation · Führungskräfte. Berichtslinie: Schweda + Schmid."},
+ FS:{label:"Geschäftsführer · EOS Field Services GmbH",sub:"Ressort Markt & Betrieb · Geschäftsmodell · P&L · Konzerneinbindung. GF-Partner: Jörg Schweda (Kaufmännisch)."}
+};
+const RADAR=["Ungeduld","Eingriffstiefe","Mentale Verantwortungsübernahme","Perfektionismus","Zu viele Parallelthemen","Überlastung"];
+const ST=JSON.parse(localStorage.getItem("dreos2")||"{}");
+ST.hut=ST.hut||"DID";
+ST.fokus=ST.fokus||["Erstes reales Arbeitsthema durch DREOS laufen lassen","Wochencoaching: jeden Freitag 12:15","Monatsreflexion Juli terminieren"];
+ST.radar=ST.radar||{};
+ST.chats=ST.chats||{};ST.key=ST.key||"";ST.model=ST.model||"claude-sonnet-4-6";
+ST.mara=ST.mara||{on:true,snz:0,last:0,dis:0};
+ST.todos=ST.todos||{lists:[{id:"inbox",name:"Inbox",collapsed:false,items:[]}],hideDone:false};
+ST.todoSeen=ST.todoSeen||{};
+const PSTAT={};
+const IMGS=JSON.parse(localStorage.getItem("dreosImgs")||"{}");
+function saveImg(id,d){IMGS[id]=d;try{localStorage.setItem("dreosImgs",JSON.stringify(IMGS))}catch(e){}}
+let PROFILE="";
+const LOCK0={salt:"410ad76cd31c8aacc4130fde9ae2d274",check:"Y4+rMIlynbcNDfsdyWOEzzcQ9rh6S/kKWNJwQFLaWm//iJAe",prof:"uhKaKk8H2uQ1+03/Ju1BEJBCJhJHiNveyKDNpsXZ6yOrfUKPlUXdVldBC+TBT+vy+bhz1DW3jyPkXdDHrO7yjxFP1ZtRSiq3/Q7PUDKI++BMGu0ts67kpXWsnHQuwKM/oqp21OHr5tJVmhMz4Y4rhjsjvbjBNRHyptKz4fajNYJw6NqBrbKmlQ58HxUiosrWMj/B6IClcFsoVnHO/XGfAZcNKrUge6X3KxlwX+uJ0USQw5XTFevFPBJkirXVs/VDyEODpA0dDjF4m4YNcTluMO96F46qfXNsoOcTy4SiwHabJs8ulLhnsrZTR2PUsxoXyssLnW0gzbO/jb+1MtBi+MFILhlXfmQSMlGu1zaT1v9iGicaXfjWWUhwWQlcuc2r3EShcZuzZbOT2bsTi7N0c3EY3h1BcF/B4iwByMAK+k0l7h9UGPAj/ovOkyJ2dfGjAhtz1mwOC7zeYwVrxvaPNqJqGSt/BhljGadPKGc2k4rPQuUwiI5Q6jA8X94CQbNAlvNljPUstTZjSYWkkThbiUieiJC63T21iDjIL2ac/moZWEnIbeObWiCF6pyVT64THAgUfnvFEESQoGEsTMfcx1jnW61ElXCwzTTi6m/Ufu1ALsRBR048cw2r0tC5rDcwpNVmGnsL9AtBwGEGWwk0QtGFDG3UdsAe5Wd+aspzZyuace2MFUyY9OQCilbfq19B0OjO7XdnWuh0cU6ph+nw4WndqwZ7YVGUnTQQeYJZOCwMnqwwA1ouumvdzf/A2ltNlfr7rl8umPL6GMJCrXbapQQlicmvMGNlM271kpncpGr1+lx/i99ZjiYnMlB7Fd3mXdanjl7XbszcFPJKUwv8Pb/1NtMyz+2U6XDwXKlPcnCXhpv1Df9oWtMPCNPsbB8EwRM/tSmISanOwpKxyirA9lhIrCrzqIYHPFtnphECfuRhypbj4Rj4qHXT7KuySO1N2QV3oYli0owgVZKCIvwQEm3qt9s3BCw7OHIt/88AYUr4peuYW3sa08ZJvb3utF4hz18PGGmRXd1SqxTJBMCnBOM4sFzeCW4RVTA+Van82OzO5xnAxvQ+ELiv9KqpqCq1KO70C45wEb3+ZwQ3+FoDSN0XgJmNPR50Y537crvDOh3jRCfuR0rcDJs/Ru8RnqAjPWOd88Ag/sXPOn8HhpIubR++5A+POqxAfIa0zwShBK1t4AMNESb9kPHRmNOzxLEcZYPKOmHIDbYfyOXdhyXgt6LZdOwKke7x9957MivfaTZFyU1c12Y3yHMoALWBtQ15"};
+function save(){ST._ts=Date.now();localStorage.setItem("dreos2",JSON.stringify(ST));syncPush()}
+function today(){return new Date().toISOString().slice(0,10)}
+function rlev(){return ST.radar.date===today()?ST.radar.lv:[0,0,0,0,0,0]}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+
+/* ================= FAMILYSYNC (ROH) – Brücke zur Familien-App ================= */
+const FS={url:"https://jwzktomctkpvbazlfhln.supabase.co",
+key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emt0b21jdGtwdmJhemxmaGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODg1NDksImV4cCI6MjA5NjI2NDU0OX0.SmWoK0yuvSzjb-cODZCywqMz-bjETdFrQy_U8EDFxCI",
+hh:"7e38a4d3-1b67-4ae8-9d4b-b5ed67e08449",
+daniel:"33051100-aa3c-460a-b6b8-a13770d0563d",
+kim:"d9a66dcb-6953-44dd-b2af-aa47b8ddd597",
+app:"https://drohwedder12111992-ui.github.io/familysync/"};
+if(ST.fam===undefined)ST.fam=true;
+const FSTAT={office:"🏢 Büro",home:"🏠 Homeoffice",travel:"✈️ Dienstreise",vacation:"🌴 Urlaub",appt:"📌 Termin"};
+let FAM={ok:false,ts:0,data:null,err:""};
+function fsApi(p,o){o=o||{};return fetch(FS.url+"/rest/v1/"+p,{method:o.method||"GET",headers:Object.assign({apikey:FS.key,Authorization:"Bearer "+FS.key,"Content-Type":"application/json",Prefer:"return=representation"},o.headers||{}),body:o.body})}
+function fsAdd(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function fsName(id){return id===FS.daniel?"Daniel":id===FS.kim?"Kim":"–"}
+function fsMid(n){n=String(n||"").toLowerCase();return n==="kim"?FS.kim:n==="daniel"?FS.daniel:null}
+function fsFmt(ds){return new Date(ds+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}
+function fsHM(t){return t?String(t).slice(0,5):""}
+async function loadFamily(force){
+ if(!ST.fam){FAM={ok:false,ts:0,data:null,err:"deaktiviert"};renderFamLine();return FAM}
+ if(!force&&FAM.ok&&Date.now()-FAM.ts<5*60000)return FAM;
+ const from=today(),to=fsAdd(14),ato=fsAdd(45);
+ try{
+  const rs=await Promise.all([
+   fsApi(`daily_statuses?member_id=in.(${FS.daniel},${FS.kim})&date=gte.${from}&date=lte.${to}&select=*`),
+   fsApi(`dog_transfers?household_id=eq.${FS.hh}&date=gte.${from}&date=lte.${to}&select=*`),
+   fsApi(`appointments?household_id=eq.${FS.hh}&date=gte.${from}&date=lte.${ato}&select=*&order=date.asc`),
+   fsApi(`birthdays?household_id=eq.${FS.hh}&select=*`),
+   fsApi(`vacation_proposals?household_id=eq.${FS.hh}&end_date=gte.${from}&select=*&order=start_date.asc`)
+  ]);
+  if(rs.some(r=>!r.ok))throw new Error("HTTP "+rs.find(r=>!r.ok).status);
+  const[sts,dogs,appts,bdays,vacs]=await Promise.all(rs.map(r=>r.json()));
+  FAM={ok:true,ts:Date.now(),err:"",data:{sts,dogs,appts,bdays,vacs}};
+ }catch(e){FAM={ok:false,ts:Date.now(),data:null,err:String(e&&e.message||e)}}
+ renderFamLine();return FAM}
+function bdNext(b){const y=new Date().getFullYear(),md=String(b.date).slice(5);let nd=y+"-"+md;if(nd<today())nd=(y+1)+"-"+md;return nd}
+function famToday(){if(!FAM.ok)return null;const d=FAM.data,t=today();
+ const st=id=>{const s=d.sts.find(x=>x.member_id===id&&x.date===t);return s?(FSTAT[s.status]||s.status)+(s.note?" ("+s.note+")":""):"kein Eintrag"};
+ const dog=d.dogs.find(x=>x.date===t);
+ const dogTxt=dog?(((dog.morning_member_id?fsName(dog.morning_member_id)+" morgens":"")+(dog.evening_member_id?(dog.morning_member_id?", ":"")+fsName(dog.evening_member_id)+" abends":""))||"offen"):"kein Eintrag";
+ const ap=d.appts.filter(a=>a.date===t).map(a=>fsHM(a.time_from)+" "+a.description);
+ const bd=d.bdays.filter(b=>bdNext(b)===t).map(b=>b.name);
+ return{daniel:st(FS.daniel),kim:st(FS.kim),dog:dogTxt,appts:ap,bdays:bd}}
+function famCtx(){
+ if(!ST.fam)return "";
+ if(!FAM.ok||!FAM.data)return "\nFAMILYSYNC: Live-Daten gerade nicht erreichbar"+(FAM.err&&FAM.err!=="deaktiviert"?" ("+FAM.err+")":"")+". Sag das ehrlich, statt zu raten.";
+ const d=FAM.data,ft=famToday();
+ const week=[];for(let i=1;i<=7;i++){const dd=fsAdd(i);const a=d.sts.find(x=>x.member_id===FS.daniel&&x.date===dd),k=d.sts.find(x=>x.member_id===FS.kim&&x.date===dd);if(a||k)week.push(fsFmt(dd)+": Daniel "+(a?FSTAT[a.status]||a.status:"–")+", Kim "+(k?FSTAT[k.status]||k.status:"–"))}
+ const ap=d.appts.slice(0,8).map(a=>fsFmt(a.date)+" "+fsHM(a.time_from)+(a.time_to?"–"+fsHM(a.time_to):"")+" "+a.description+" ["+(a.member_ids||[]).map(fsName).join("+")+((a.status&&a.status!=="confirmed")?", unbestätigt":"")+"]").join("; ");
+ const bd=d.bdays.map(b=>({n:b.name,d:bdNext(b)})).sort((a,b)=>a.d<b.d?-1:1).slice(0,4).map(b=>b.n+" am "+fsFmt(b.d)).join("; ");
+ const vc=d.vacs.slice(0,5).map(v=>v.name+" "+fsFmt(v.start_date)+"–"+fsFmt(v.end_date)+" ["+(v.member_ids||[]).map(fsName).join("+")+", "+(v.status==="confirmed"?"bestätigt":"Vorschlag, noch nicht von beiden bestätigt")+"]").join("; ");
+ return `
+FAMILYSYNC-LIVE-DATEN (ROH, die Familien-App von Daniel & Kim; Hund: Emma; Stand ${new Date(FAM.ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})} Uhr):
+Heute (${fsFmt(today())}): Daniel ${ft.daniel} · Kim ${ft.kim} · Emma: ${ft.dog}${ft.bdays.length?" · 🎂 Geburtstag: "+ft.bdays.join(", "):""}
+Nächste 7 Tage: ${week.join(" | ")||"keine Einträge"}
+Termine (45 Tage): ${ap||"keine"}
+Nächste Geburtstage: ${bd||"keine"}
+Urlaube: ${vc||"keine"}`}
+function fsRules(){return `
+SCHREIBZUGRIFF AUF ROH: Wenn Daniel dich bittet, etwas in der Familien-App einzutragen oder zu ändern, hänge ganz ans ENDE deiner Antwort GENAU EINE Zeile in einem dieser Formate an (sonst nie):
+@@FS{"op":"status","member":"daniel","date":"JJJJ-MM-TT","status":"office|home|travel|vacation|appt","note":null}@@
+@@FS{"op":"appt","date":"JJJJ-MM-TT","time_from":"HH:MM","time_to":"HH:MM","description":"…","members":["daniel"]}@@
+@@FS{"op":"dog","date":"JJJJ-MM-TT","morning":"daniel|kim|null","evening":"daniel|kim|null"}@@
+@@FS{"op":"birthday","name":"…","date":"JJJJ-MM-TT"}@@
+@@FS{"op":"vacation","name":"…","start_date":"JJJJ-MM-TT","end_date":"JJJJ-MM-TT","members":["daniel","kim"]}@@
+Regeln: Heute ist ${today()}. Fehlen Datum oder Details, frage nach statt zu raten. Daniel bestätigt jede Aktion per Klick, bevor sie wirklich eingetragen wird – kündige das kurz an. Einträge für Kim nur, wenn Daniel es ausdrücklich verlangt.`}
+function fsDescribe(a){
+ if(a.op==="status")return (a.member==="kim"?"Kim":"Daniel")+" ist am "+fsFmt(a.date)+" "+(FSTAT[a.status]||a.status)+(a.note?" – Notiz: "+a.note:"");
+ if(a.op==="appt")return "Termin „"+a.description+"“ am "+fsFmt(a.date)+" "+(a.time_from||"")+(a.time_to?"–"+a.time_to:"")+" für "+((a.members||["daniel"]).join(" + "));
+ if(a.op==="dog")return "Emma am "+fsFmt(a.date)+": morgens "+(a.morning||"offen")+", abends "+(a.evening||"offen");
+ if(a.op==="birthday")return "Geburtstag: "+a.name+" am "+a.date;
+ if(a.op==="vacation")return "Urlaubsvorschlag „"+a.name+"“ "+fsFmt(a.start_date)+"–"+fsFmt(a.end_date)+" für "+((a.members||[]).join(" + "));
+ return JSON.stringify(a)}
+function fsParse(t){const m=String(t).match(/@@FS(\{[\s\S]*?\})@@/);if(!m)return null;
+ try{const a=JSON.parse(m[1]);if(!a.op)return null;return{act:a,clean:String(t).replace(/@@FS\{[\s\S]*?\}@@/g,"").trim()}}catch(e){return null}}
+async function fsLog(msg){try{await fsApi("activity_log",{method:"POST",body:JSON.stringify({household_id:FS.hh,member_id:FS.daniel,message:msg+" <em>(via DREOS)</em>"})})}catch(e){}}
+async function fsExec(a){
+ try{
+  const now=new Date().toISOString();
+  if(a.op==="status"){const mid=fsMid(a.member)||FS.daniel;
+   const body=JSON.stringify({status:a.status,note:a.note||null,updated_at:now});
+   const r=await fsApi(`daily_statuses?member_id=eq.${mid}&date=eq.${a.date}`,{method:"PATCH",body});
+   const tx=await r.text();
+   if(!(tx&&tx!=="[]"&&tx!=="null"&&tx.length>2)){const r2=await fsApi("daily_statuses",{method:"POST",body:JSON.stringify({member_id:mid,date:a.date,status:a.status,note:a.note||null,updated_at:now})});if(!r2.ok)throw new Error("HTTP "+r2.status)}
+   await fsLog(`<strong>${fsName(mid)}</strong> ist ${fsFmt(a.date)} <strong>${FSTAT[a.status]||a.status}</strong>`)}
+  else if(a.op==="appt"){const mids=(a.members&&a.members.length?a.members:["daniel"]).map(fsMid).filter(Boolean);
+   const shared=mids.length>1;
+   const r=await fsApi("appointments",{method:"POST",body:JSON.stringify({member_id:mids[0],household_id:FS.hh,date:a.date,time:a.time_from||"00:00",time_from:a.time_from||"00:00",time_to:a.time_to||null,description:a.description,member_ids:mids,confirmed_by:[FS.daniel],status:shared?"pending":"confirmed"})});
+   if(!r.ok)throw new Error("HTTP "+r.status);
+   await fsLog(`<strong>Daniel</strong> hat Termin angelegt: <strong>${a.description}</strong> (${fsFmt(a.date)})`)}
+  else if(a.op==="dog"){const payload={household_id:FS.hh,date:a.date,morning_member_id:fsMid(a.morning),evening_member_id:fsMid(a.evening),updated_at:now};
+   const r=await fsApi(`dog_transfers?household_id=eq.${FS.hh}&date=eq.${a.date}`,{method:"PATCH",body:JSON.stringify(payload)});
+   const tx=await r.text();
+   if(!(tx&&tx!=="[]"&&tx!=="null"&&tx.length>2)){const r2=await fsApi("dog_transfers",{method:"POST",body:JSON.stringify(payload)});if(!r2.ok)throw new Error("HTTP "+r2.status)}
+   await fsLog(`<strong>Daniel</strong> hat Emma-Tag ${fsFmt(a.date)} aktualisiert`)}
+  else if(a.op==="birthday"){const r=await fsApi("birthdays",{method:"POST",body:JSON.stringify({household_id:FS.hh,name:a.name,date:a.date})});
+   if(!r.ok)throw new Error("HTTP "+r.status);
+   await fsLog(`<strong>Daniel</strong> hat Geburtstag eingetragen: <strong>${a.name}</strong>`)}
+  else if(a.op==="vacation"){const mids=(a.members&&a.members.length?a.members:["daniel","kim"]).map(fsMid).filter(Boolean);
+   const solo=mids.length===1&&mids[0]===FS.daniel;
+   const r=await fsApi("vacation_proposals",{method:"POST",body:JSON.stringify({household_id:FS.hh,name:a.name,start_date:a.start_date,end_date:a.end_date,proposed_by_id:FS.daniel,confirmed_by_ids:solo?mids:[FS.daniel],member_ids:mids,status:solo?"confirmed":"proposal",updated_at:now})});
+   if(!r.ok)throw new Error("HTTP "+r.status);
+   await fsLog(solo?`<strong>Daniel</strong> Urlaub: <strong>${a.name}</strong> (${fsFmt(a.start_date)} – ${fsFmt(a.end_date)})`:`<strong>Daniel</strong> schlägt Urlaub vor: <strong>${a.name}</strong>`)}
+  else throw new Error("Unbekannte Aktion: "+a.op);
+  await loadFamily(true);
+  return{ok:true}
+ }catch(e){return{ok:false,err:String(e&&e.message||e)}}}
+let FSPEND=null;
+function fsConfirm(a){FSPEND=a;
+ ephem(`<div class="fsact"><b>Sophie möchte in ROH eintragen:</b><br>${esc(fsDescribe(a))}<div class="btnrow" style="margin-top:8px"><button class="btn" onclick="fsGo(this)">✓ In ROH eintragen</button><button class="btn" onclick="FSPEND=null;this.closest('.m').remove()">Verwerfen</button></div></div>`)}
+async function fsGo(btn){if(!FSPEND)return;btn.disabled=true;btn.textContent="Trage ein…";const a=FSPEND;FSPEND=null;
+ const r=await fsExec(a);const box=btn.closest(".m");if(box)box.remove();
+ if(r.ok){addMsg("a","Erledigt – steht in der ROH-App. Kim sieht es im Activity-Feed.");speak("Erledigt – steht in der ROH-App.","sophie");toast("✓ In ROH eingetragen")}
+ else ephem("⚠ ROH-Eintrag fehlgeschlagen: "+esc(r.err))}
+function renderFamLine(){const el=document.getElementById("famline");if(!el)return;
+ if(!ST.fam){el.innerHTML="";return}
+ if(!FAM.ok){el.innerHTML=`<span class="fsdot" style="background:#FF7088"></span>ROH FamilySync: ${FAM.err==="deaktiviert"?"aus":"nicht erreichbar"}`;return}
+ const f=famToday();
+ el.innerHTML=`<span class="fsdot" style="background:#7BC9A0"></span><b>Familie heute:</b> Daniel ${esc(f.daniel)} · Kim ${esc(f.kim)} · 🐕 Emma: ${esc(f.dog)}${f.appts.length?" · 📌 "+esc(f.appts.join(" · ")):""}${f.bdays.length?" · 🎂 "+esc(f.bdays.join(", ")):""}`}
+function openFam(){loadFamily().then(()=>{
+ const d=FAM.ok?FAM.data:null,f=famToday();
+ panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>🏠 Familie · ROH FamilySync</h2>
+ <p class="desc" style="margin-top:6px">Live verbunden mit eurer Familien-App (Haushalt Rohweddlis). Sophie kennt diese Daten und kann auf deinen Wunsch Einträge anlegen – jede Aktion bestätigst du vorher per Klick.</p>
+ ${FAM.ok?`<div class="famgrid">
+ <div class="fbox"><h4>Heute</h4>Daniel: ${esc(f.daniel)}<br>Kim: ${esc(f.kim)}<br>🐕 Emma: ${esc(f.dog)}${f.bdays.length?"<br>🎂 "+esc(f.bdays.join(", ")):""}</div>
+ <div class="fbox"><h4>Termine</h4>${d.appts.slice(0,6).map(a=>fsFmt(a.date)+" "+fsHM(a.time_from)+" "+esc(a.description)+" <small>("+(a.member_ids||[]).map(fsName).join("+")+(a.status&&a.status!=="confirmed"?", unbestätigt":"")+")</small>").join("<br>")||"<small>keine anstehend</small>"}</div>
+ <div class="fbox"><h4>Urlaube</h4>${d.vacs.slice(0,5).map(v=>esc(v.name)+" <small>"+fsFmt(v.start_date)+"–"+fsFmt(v.end_date)+" · "+(v.status==="confirmed"?"✓ bestätigt":"Vorschlag")+"</small>").join("<br>")||"<small>keine geplant</small>"}</div>
+ <div class="fbox"><h4>Geburtstage</h4>${d.bdays.map(b=>({n:b.name,d:bdNext(b)})).sort((a,b)=>a.d<b.d?-1:1).slice(0,5).map(b=>esc(b.n)+" <small>"+fsFmt(b.d)+"</small>").join("<br>")||"<small>keine</small>"}</div>
+ </div>`:`<div class="note" style="color:#FF7088">ROH ist gerade nicht erreichbar${FAM.err&&FAM.err!=="deaktiviert"?" ("+esc(FAM.err)+")":""}.</div>`}
+ <div class="btnrow" style="margin-top:14px"><button class="btn" onclick="loadFamily(true).then(openFam)">↻ Aktualisieren</button><button class="btn" onclick="window.open(FS.app,'_blank')">ROH-App öffnen</button><button class="btn" onclick="closeOvl();enterRoom('sophie','Sophie, was steht bei uns privat an?')">Mit Sophie besprechen</button></div>
+ <div class="note">Beispiele für Sophie: „Trag mich Freitag als Homeoffice ein" · „Neuer Termin Samstag 15–17 Uhr Gartencenter, nur ich" · „Kim übernimmt Emma am Dienstag morgens".</div>`;
+ ovl.classList.add("show")})}
+
+/* ================= STIMME: VORLESEN + DIKTAT ================= */
+if(ST.voice===undefined)ST.voice={out:true,rate:1,uri:""};
+const VTONE={sophie:{p:1.12,r:1.04},vera:{p:1.0,r:0.9},henrik:{p:0.85,r:0.95},ingrid:{p:1.05,r:1.02},samuel:{p:0.72,r:0.93},carla:{p:1.2,r:1.12},adrian:{p:0.9,r:0.9},konstantin:{p:0.8,r:0.92},mara:{p:0.95,r:1.02}};
+let VOICES=[];
+function loadVoices(){try{VOICES=(speechSynthesis.getVoices()||[]).filter(v=>v.lang&&v.lang.toLowerCase().startsWith("de"))}catch(e){VOICES=[]}}
+if("speechSynthesis" in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+function pickVoice(){if(!VOICES.length)loadVoices();return VOICES.find(v=>v.voiceURI===ST.voice.uri)||VOICES.find(v=>/anna|petra|helena/i.test(v.name))||VOICES[0]||null}
+function ttsClean(t){return String(t).replace(/@@FS\{[\s\S]*?\}@@/g,"").replace(/https?:\/\/\S+/g,"").replace(/[*_#`>|]/g,"").replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{2190}-\u{21FF}]/gu,"").replace(/\s+/g," ").trim()}
+function mkUtter(txt,charId){const u=new SpeechSynthesisUtterance(txt);const v=pickVoice();if(v)u.voice=v;u.lang=(v&&v.lang)||"de-DE";
+ const tn=VTONE[charId]||{p:1,r:1};u.pitch=tn.p;u.rate=tn.r*(ST.voice.rate||1);return u}
+function speak(t,charId){if(!ST.voice.out||!("speechSynthesis" in window))return;
+ const txt=ttsClean(t);if(!txt)return;speechSynthesis.cancel();speechSynthesis.speak(mkUtter(txt,charId))}
+function speakMeet(t){if(!ST.voice.out||!("speechSynthesis" in window))return;
+ speechSynthesis.cancel();
+ String(t).split(/\n(?=\s*\**[A-ZÄÖÜ][a-zäöüß]+\**\s*:)/).forEach(s=>{s=s.trim();if(!s)return;
+  const m=s.match(/^\**([A-ZÄÖÜ][a-zäöüß]+)\**\s*:\s*([\s\S]*)$/);let id=null,body=s;
+  if(m){const c=CHARS.find(x=>fname(x)===m[1]);if(c){id=c.id;body=m[2]}}
+  const txt=ttsClean(body);if(txt)speechSynthesis.speak(mkUtter(txt,id))})}
+function speakReply(t){if(CUR.type==="meet")speakMeet(t);else speak(t,CUR.id)}
+function stopSpeak(){if("speechSynthesis" in window)try{speechSynthesis.cancel()}catch(e){}}
+function voiceToggle(){ST.voice.out=!ST.voice.out;save();if(!ST.voice.out)stopSpeak();updSpk();toast(ST.voice.out?"🔊 Antworten werden vorgelesen":"🔇 Vorlesen aus")}
+function updSpk(){const b=document.getElementById("spkb");if(!b)return;b.textContent=ST.voice.out?"🔊 Vorlesen":"🔇 Vorlesen";b.style.opacity=ST.voice.out?"1":".55";b.title=ST.voice.out?"Vorlesen an – klicken zum Ausschalten":"Vorlesen aus – klicken zum Einschalten"}
+let REC=null,RECTMR=null;
+function micToggle(fid){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){toast("Diktat wird von diesem Browser nicht unterstützt");return}
+ if(REC){try{REC.stop()}catch(e){}return}
+ const f=document.getElementById(fid);if(!f)return;
+ const base=f.value?f.value.replace(/\s+$/,"")+" ":"";
+ stopSpeak();
+ REC=new SR();REC.lang="de-DE";REC.interimResults=true;REC.continuous=true;
+ document.querySelectorAll(".micb").forEach(b=>b.classList.toggle("rec",b.dataset.f===fid));
+ const arm=()=>{clearTimeout(RECTMR);RECTMR=setTimeout(()=>{if(REC&&f.value.trim()){try{REC.stop()}catch(e){}}},2000)};
+ REC.onresult=e=>{let fin="",int="";for(let i=0;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript;else int+=r[0].transcript}f.value=base+fin+int;arm()};
+ REC.onend=()=>{REC=null;clearTimeout(RECTMR);document.querySelectorAll(".micb").forEach(b=>b.classList.remove("rec"));
+  if(f.value.trim()){if(fid==="ci")sendMsg();else askSophie()}else f.focus()};
+ REC.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed")toast("Mikrofonzugriff verweigert – bitte im Browser erlauben")};
+ try{REC.start()}catch(e){REC=null}}
+
+/* ================= TAG/NACHT-ENGINE ================= */
+const ROOT=document.documentElement;
+const STOPS=[[0,[5,9,26],[10,16,38],[18,26,52]],[4.5,[6,10,30],[13,19,44],[26,33,58]],[6,[38,42,86],[120,80,96],[226,140,96]],[7.5,[96,146,205],[148,186,226],[244,196,150]],[12,[108,168,230],[156,200,238],[206,224,242]],[16.5,[96,148,210],[150,180,222],[226,186,140]],[18.7,[56,52,110],[120,76,116],[238,120,76]],[20,[16,18,52],[30,30,70],[70,52,96]],[21.5,[6,10,30],[12,18,42],[22,30,56]],[24,[5,9,26],[10,16,38],[18,26,52]]];
+function skyCols(t){let a=STOPS[0],b=STOPS[STOPS.length-1];
+for(let i=0;i<STOPS.length-1;i++){if(t>=STOPS[i][0]&&t<=STOPS[i+1][0]){a=STOPS[i];b=STOPS[i+1];break}}
+const f=(t-a[0])/((b[0]-a[0])||1);
+return [1,2,3].map(k=>a[k].map((v,j)=>Math.round(v+(b[k][j]-v)*f)).join(","))}
+function nF(t){if(t<5||t>=21)return 1;if(t<7.5)return 1-(t-5)/2.5;if(t<18.5)return 0;return (t-18.5)/2.5}
+let LAPSE=false,simT=0;
+function curT(){const d=new Date();return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600}
+function T(){return LAPSE?simT:curT()}
+function phaseLabel(t){if(t<5)return "Die Stadt schläft nie ganz.";if(t<7.5)return "Sonnenaufgang über der Stadt.";if(t<11)return "Die Stadt ist wach.";if(t<17)return "Voller Betrieb da draußen.";if(t<19.5)return "Abendlicht über der Skyline.";if(t<21.5)return "Die Stadt schaltet die Lichter an.";return "Die Stadt leuchtet."}
+function updateSky(){const t=T();
+const c=skyCols(t);
+document.getElementById("sky").style.background=`linear-gradient(180deg,rgb(${c[0]}),rgb(${c[1]}) 52%,rgb(${c[2]}))`;
+const n=nF(t);ROOT.style.setProperty("--nf",n.toFixed(2));
+ROOT.style.setProperty("--litw",Math.min(1,n*1.1+((t>17&&t<22)?0.15:0)).toFixed(2));
+document.getElementById("stars").style.opacity=(n*.95).toFixed(2);
+const sun=document.getElementById("sun"),moon=document.getElementById("moon");
+if(t>5.3&&t<19.7){const f=Math.min(1,Math.max(0,(t-5.5)/14));sun.style.opacity=1;sun.style.left=(4+88*f)+"vw";sun.style.top=(56-48*Math.sin(Math.PI*f))+"vh"}else sun.style.opacity=0;
+const tm=(t-20+24)%24;
+if(tm<10.5){const f=tm/10.5;moon.style.opacity=.95;moon.style.left=(6+86*f)+"vw";moon.style.top=(50-42*Math.sin(Math.PI*f))+"vh"}else moon.style.opacity=0;
+const g=Math.max(0,1-Math.abs(t-6.3)/1.6)+Math.max(0,1-Math.abs(t-19.2)/1.6);
+document.getElementById("hglow").style.opacity=Math.min(.8,g).toFixed(2);
+const gs=document.getElementById("gsub");if(gs)gs.textContent=new Date().toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+" · "+phaseLabel(t)+(LAPSE?" · Zeitraffer läuft":"")}
+function toggleLapse(){LAPSE=!LAPSE;if(LAPSE)simT=curT();document.getElementById("lapseb").classList.toggle("on",LAPSE);clock();updateSky()}
+setInterval(()=>{if(LAPSE){simT=(simT+0.055)%24;updateSky();clock()}},120);
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function genCity(seed,fill,withWin){const r=rng(seed);let x=-20,b="",w="";
+while(x<1640){const bw=34+r()*70,bh=55+r()*215,by=320-bh;
+b+=`<rect x="${x.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${fill}"/>`;
+if(withWin&&r()>0.78)b+=`<rect x="${(x+bw/2).toFixed(1)}" y="${(by-18).toFixed(1)}" width="2" height="18" fill="${fill}"/><circle cx="${(x+bw/2+1).toFixed(1)}" cy="${(by-20).toFixed(1)}" r="2" class="bcn"/>`;
+if(withWin){for(let wy=by+8;wy<312;wy+=11){for(let wx=x+5;wx<x+bw-6;wx+=9){if(r()>0.5)w+=`<rect x="${wx.toFixed(1)}" y="${wy.toFixed(1)}" width="4.6" height="6" class="w" style="animation-delay:${(r()*9).toFixed(1)}s"/>`}}}
+x+=bw+4+r()*16}
+return `<svg viewBox="0 0 1600 320" preserveAspectRatio="xMidYMax slice"><g>${b}</g><g class="wins">${w}</g></svg>`}
+function genScene(){
+document.getElementById("cityfar").innerHTML=genCity(11,"#11203A",false);
+document.getElementById("citynear").innerHTML=genCity(7,"#0A111E",true);
+const r=rng(42);let st="";
+for(let i=0;i<110;i++){st+=`<div class="st" style="left:${(r()*100).toFixed(1)}%;top:${(r()*58).toFixed(1)}%;width:${(1+r()*1.4).toFixed(1)}px;height:${(1+r()*1.4).toFixed(1)}px;animation-delay:${(r()*4).toFixed(1)}s;animation-duration:${(3+r()*4).toFixed(1)}s"></div>`}
+document.getElementById("stars").innerHTML=st;
+let cl="";const cs=[[10,170],[26,240],[16,300],[36,210]];
+cs.forEach((p,i)=>{cl+=`<svg class="cl" style="top:${p[0]}%;width:${p[1]}px;animation-duration:${95+i*55}s;animation-delay:-${i*41}s" viewBox="0 0 200 60"><ellipse cx="60" cy="40" rx="55" ry="15" fill="currentColor"/><ellipse cx="110" cy="28" rx="46" ry="17" fill="currentColor"/><ellipse cx="152" cy="42" rx="38" ry="12" fill="currentColor"/></svg>`});
+document.getElementById("clouds").innerHTML=cl}
+
+/* ================= HUB ================= */
+function renderDoors(){let h="";
+CHARS.filter(c=>!c.desk).forEach(c=>{h+=`<div class="door ${c.red?"red":""}" onclick="enterRoom('${c.id}')"><div class="dbody"><div class="dlight"></div>${avatar(c,58)}<div class="dnm">${c.name}</div><div class="drl">${c.role}</div><div class="plate">BÜRO ${ROOMNO[c.id]}</div><div class="dhandle"></div></div></div>`});
+h+=`<div class="door board" onclick="boardSetup()"><div class="dbody"><div class="dlight"></div><svg width="86" height="56" viewBox="0 0 86 58" style="margin-top:2px"><ellipse cx="43" cy="33" rx="33" ry="12" fill="none" stroke="#64AAB2" stroke-width="2"/><circle cx="43" cy="11" r="5" fill="#64AAB2"/><circle cx="12" cy="29" r="5" fill="#64AAB2"/><circle cx="74" cy="29" r="5" fill="#64AAB2"/><circle cx="27" cy="50" r="5" fill="#64AAB2"/><circle cx="59" cy="50" r="5" fill="#64AAB2"/></svg><div class="dnm">Meetingroom</div><div class="drl">Meeting mit mehreren Experten</div><div class="plate">MEETINGRAUM</div><div class="dhandle"></div></div></div>`;
+document.getElementById("doors").innerHTML=h}
+function renderRec(){const s=CH("sophie"),lv=rlev(),warn=lv[5]>=2||lv.filter(x=>x>=2).length>=3;
+document.getElementById("recwho").innerHTML=`${avatar(s,60)}<div><h2 id="greet"></h2><div class="so">Sophie Janssen · Empfang &amp; Personal Assistant<br>${warn?"<span style='color:#FF7088'>Achte heute auf deine Belastung – sag mir, was wir abgeben.</span>":"Platziere dein Anliegen bei mir – ich schlage dir die richtige Besetzung vor."}</div></div>`;
+greet()}
+function greet(){const h=new Date().getHours();const g=h<5?"Gute Nacht":h<11?"Guten Morgen":h<18?"Guten Tag":"Guten Abend";
+const el=document.getElementById("greet");if(el)el.textContent=g+", Daniel.";
+const gh=document.getElementById("ghead");if(gh)gh.textContent=g+", Daniel."}
+function clock(){const d=new Date();let s=d.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long"})+" · "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+if(LAPSE){const hh=Math.floor(simT),mm=Math.floor((simT-hh)*60);s+=" · ⏩ "+String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0")}
+document.getElementById("clock").textContent=s}
+setInterval(clock,30000);setInterval(()=>{if(!LAPSE)updateSky();greet()},30000);
+function setHut(h){ST.hut=h;save();document.getElementById("hutDID").className=h==="DID"?"on":"";document.getElementById("hutFS").className=h==="FS"?"on":"";document.getElementById("hutline").innerHTML=`Aktiver Hut: <b>${HUTS[h].label}</b> — ${HUTS[h].sub}`}
+
+/* ================= VIEWS / RÄUME ================= */
+let CUR={type:null,id:null,key:null,parts:[]};
+function show(v){["hub","room","meet"].forEach(x=>document.getElementById(x).classList.toggle("on",x===v));if(v!=="hub")document.getElementById("hub").classList.remove("schat");window.scrollTo(0,0)}
+function leaveRoom(){stopSpeak();const k=CUR.key;CUR={type:null,id:null,key:null,parts:[]};document.getElementById("rdecor").innerHTML="";document.getElementById("hub").classList.remove("schat");document.getElementById("chatbox").style.display="none";renderRec();show("hub");if(k)todoSuggest(k)}
+function mountChat(slotId){const cb=document.getElementById("chatbox");document.getElementById(slotId).appendChild(cb);cb.style.display="flex"}
+function enterLobbyChat(auto){const c=CH("sophie");stopSpeak();CUR={type:"room",id:"sophie",key:"sophie",parts:["sophie"]};
+document.getElementById("rstarts").innerHTML=c.starts.map(s=>`<button onclick="prefill('${s.replace(/'/g,"\\'")}')">${s}</button>`).join("");
+show("hub");document.getElementById("hub").classList.add("schat");
+mountChat("lslot");renderChat();keyNote();
+if(auto)setTimeout(()=>sendText(auto),400)}
+function enterRoom(id,auto){if(id==="sophie")return enterLobbyChat(auto);const c=CH(id);CUR={type:"room",id:id,key:id,parts:[id]};
+document.getElementById("rtitle").textContent=(id==="sophie"?"Empfang":"Büro "+(ROOMNO[id]||""))+" · "+c.name;
+document.getElementById("rdecor").innerHTML=deco(id);
+document.getElementById("rcard").innerHTML=`${avatar(c,128)}<h2 style="margin-top:12px;font-size:19px">${c.name}</h2><br><span class="pill ${c.red?"red":""}">${c.role}</span><div class="quote">„${c.quote}“</div><p class="desc">${c.persona}</p><div class="sec"><h3>Leitfragen</h3><ul class="qs">${c.fragen.map(f=>`<li>${f}</li>`).join("")}</ul></div>`;
+document.getElementById("rstarts").innerHTML=c.starts.map(s=>`<button onclick="prefill('${s.replace(/'/g,"\\'")}')">${s}</button>`).join("");
+mountChat("rslot");show("room");renderChat();keyNote();
+if(auto)setTimeout(()=>sendText(auto),400)}
+function enterMeet(ids,auto){ids=ids.slice(0,5);
+CUR={type:"meet",id:null,key:"meet:"+ids.slice().sort().join("-"),parts:ids};
+document.getElementById("mtitle").textContent="Meetingroom · "+ids.map(id=>fname(CH(id))).join(" · ");
+const n=ids.length;let seats="";
+ids.forEach((id,i)=>{const f=n===1?0.5:i/(n-1);const x=16+68*f,y=26-18*Math.sin(Math.PI*f);
+seats+=`<div class="seat" style="left:${x.toFixed(1)}%;top:${y.toFixed(0)}px">${avatar(CH(id),54)}<div>${fname(CH(id))}</div></div>`});
+document.getElementById("mtable").innerHTML=`<svg class="tbl" viewBox="0 0 800 120" preserveAspectRatio="none"><ellipse cx="400" cy="98" rx="340" ry="30" fill="rgba(30,15,22,.92)"/><ellipse cx="400" cy="88" rx="340" ry="30" fill="rgba(56,30,40,.96)" stroke="rgba(184,154,106,.6)"/></svg>${seats}`;
+document.getElementById("rstarts").innerHTML="";
+mountChat("mslot");show("meet");renderChat();keyNote();
+if(auto)setTimeout(()=>sendText(auto),400)}
+function prefill(t){const i=document.getElementById("ci");i.value=t;i.focus()}
+function keyNote(){document.querySelectorAll(".keynote").forEach(k=>{
+k.innerHTML=ST.key?"Gespräche bleiben lokal gespeichert · Modell: "+ST.model.replace("claude-","").replace(/-\d+$/,"")+" · Mara-Wache: "+(ST.mara.on?"aktiv":"aus")+" · <a href='#' onclick='openSet();return false' style='color:#64AAB2'>Einstellungen</a>":"Noch kein API-Key hinterlegt – <a href='#' onclick='openSet();return false' style='color:#FF7088'>jetzt in den Einstellungen eintragen</a>, dann antworten die Charaktere direkt hier."})}
+
+/* ================= BÜRO-DEKOR ================= */
+function deco(id){const A="rgba(100,170,178,.55)",R2="rgba(234,0,41,.55)",D="rgba(255,255,255,.22)";
+const P={
+sophie:`<rect x="100" y="200" width="300" height="14" fill="${D}"/><rect x="130" y="214" width="16" height="70" fill="${D}"/><rect x="354" y="214" width="16" height="70" fill="${D}"/><line x1="180" y1="200" x2="180" y2="150" stroke="${D}" stroke-width="2.5"/><ellipse cx="180" cy="140" rx="22" ry="12" fill="${A}" opacity=".7"/><rect x="250" y="160" width="90" height="40" rx="4" fill="none" stroke="${A}" stroke-width="2"/><path d="M1000 260 q0 -30 45 -30 q45 0 45 30 l0 22 l-90 0 Z" fill="none" stroke="${A}" stroke-width="2.5"/><circle cx="1045" cy="218" r="9" fill="none" stroke="${A}" stroke-width="2"/><path d="M1036 214 q-8 -10 2 -14 M1054 214 q8 -10 -2 -14" fill="none" stroke="${A}" stroke-width="2"/>`,
+vera:`<rect x="60" y="60" width="120" height="200" fill="none" stroke="${D}" stroke-width="2"/><line x1="60" y1="110" x2="180" y2="110" stroke="${D}"/><line x1="60" y1="160" x2="180" y2="160" stroke="${D}"/><line x1="60" y1="210" x2="180" y2="210" stroke="${D}"/><rect x="72" y="80" width="10" height="28" fill="${A}"/><rect x="88" y="76" width="8" height="32" fill="${D}"/><rect x="102" y="84" width="12" height="24" fill="${A}"/><path d="M480 250 q0 -45 45 -45 q45 0 45 45 l0 30 l-90 0 Z" fill="none" stroke="${A}" stroke-width="2.5"/><path d="M680 250 q0 -45 -45 -45 q-45 0 -45 45 l0 30 l90 0 Z" fill="none" stroke="${A}" stroke-width="2.5"/><line x1="1020" y1="120" x2="1020" y2="280" stroke="${D}" stroke-width="3"/><ellipse cx="1020" cy="108" rx="26" ry="14" fill="${A}" opacity=".7"/>`,
+henrik:`<rect x="120" y="60" width="320" height="190" rx="6" fill="none" stroke="${D}" stroke-width="2.5"/><rect x="250" y="85" width="58" height="26" fill="none" stroke="${A}" stroke-width="2"/><rect x="170" y="150" width="58" height="26" fill="none" stroke="${A}" stroke-width="2"/><rect x="250" y="150" width="58" height="26" fill="none" stroke="${A}" stroke-width="2"/><rect x="330" y="150" width="58" height="26" fill="none" stroke="${A}" stroke-width="2"/><line x1="279" y1="111" x2="199" y2="150" stroke="${A}" stroke-width="2"/><line x1="279" y1="111" x2="279" y2="150" stroke="${A}" stroke-width="2"/><line x1="279" y1="111" x2="359" y2="150" stroke="${A}" stroke-width="2"/><rect x="950" y="200" width="180" height="10" fill="${D}"/><rect x="1000" y="210" width="14" height="70" fill="${D}"/>`,
+ingrid:`<rect x="100" y="70" width="170" height="100" rx="5" fill="none" stroke="${D}" stroke-width="2.5"/><rect x="120" y="130" width="16" height="30" fill="${A}"/><rect x="146" y="110" width="16" height="50" fill="${A}"/><rect x="172" y="95" width="16" height="65" fill="${A}"/><rect x="198" y="120" width="16" height="40" fill="${A}"/><rect x="300" y="70" width="170" height="100" rx="5" fill="none" stroke="${D}" stroke-width="2.5"/><polyline points="320,150 360,120 395,135 450,90" fill="none" stroke="${R2}" stroke-width="2.5"/><rect x="980" y="190" width="160" height="10" fill="${D}"/><rect x="1030" y="200" width="14" height="80" fill="${D}"/>`,
+samuel:`<line x1="140" y1="290" x2="140" y2="180" stroke="${D}" stroke-width="3"/><path d="M140 200 q-35 -25 -55 -8 M140 185 q35 -28 58 -10 M140 215 q-28 -8 -42 8 M140 220 q30 -6 44 12" fill="none" stroke="${A}" stroke-width="2.5"/><rect x="980" y="70" width="50" height="50" fill="none" stroke="${D}" stroke-width="2"/><rect x="1050" y="80" width="50" height="50" fill="none" stroke="${A}" stroke-width="2"/><rect x="1015" y="150" width="50" height="50" fill="none" stroke="${D}" stroke-width="2"/>`,
+carla:`<rect x="110" y="60" width="300" height="180" rx="6" fill="none" stroke="${D}" stroke-width="2.5"/><line x1="210" y1="60" x2="210" y2="240" stroke="${D}"/><line x1="310" y1="60" x2="310" y2="240" stroke="${D}"/><rect x="125" y="80" width="60" height="22" fill="${A}"/><rect x="125" y="112" width="60" height="22" fill="${A}"/><rect x="225" y="80" width="60" height="22" fill="${A}"/><rect x="325" y="80" width="60" height="22" fill="${R2}"/><rect x="1000" y="220" width="90" height="60" fill="none" stroke="${D}" stroke-width="2.5"/><line x1="1000" y1="240" x2="1090" y2="240" stroke="${D}"/>`,
+adrian:`<rect x="110" y="120" width="120" height="75" rx="4" fill="none" stroke="${A}" stroke-width="2.5"/><rect x="245" y="110" width="120" height="85" rx="4" fill="none" stroke="${A}" stroke-width="2.5"/><line x1="170" y1="195" x2="170" y2="225" stroke="${D}" stroke-width="3"/><line x1="305" y1="195" x2="305" y2="225" stroke="${D}" stroke-width="3"/><rect x="120" y="225" width="260" height="8" fill="${D}"/><rect x="1000" y="80" width="110" height="200" rx="6" fill="none" stroke="${D}" stroke-width="2.5"/><circle cx="1020" cy="110" r="4" class="led"/><circle cx="1040" cy="110" r="4" class="led" style="animation-delay:.5s"/><circle cx="1020" cy="150" r="4" class="led" style="animation-delay:1s"/><circle cx="1040" cy="190" r="4" class="led" style="animation-delay:.2s"/><line x1="1000" y1="130" x2="1110" y2="130" stroke="${D}"/><line x1="1000" y1="170" x2="1110" y2="170" stroke="${D}"/><line x1="1000" y1="210" x2="1110" y2="210" stroke="${D}"/>`,
+konstantin:`<ellipse cx="240" cy="250" rx="130" ry="28" fill="none" stroke="${D}" stroke-width="2.5"/><rect x="980" y="60" width="180" height="120" rx="5" fill="none" stroke="${D}" stroke-width="2.5"/><circle cx="1030" cy="100" r="6" fill="${A}"/><circle cx="1090" cy="130" r="6" fill="${A}"/><circle cx="1120" cy="90" r="6" fill="${R2}"/><line x1="1030" y1="100" x2="1090" y2="130" stroke="${A}" stroke-width="1.5"/><line x1="1090" y1="130" x2="1120" y2="90" stroke="${A}" stroke-width="1.5"/>`,
+mara:`<rect x="420" y="230" width="360" height="12" fill="${D}"/><rect x="460" y="242" width="14" height="50" fill="${D}"/><rect x="726" y="242" width="14" height="50" fill="${D}"/><line x1="600" y1="0" x2="600" y2="90" stroke="${D}" stroke-width="2.5"/><path d="M575 90 L625 90 L640 130 L560 130 Z" fill="none" stroke="${R2}" stroke-width="2.5"/><path d="M560 130 L520 280 L680 280 L640 130" fill="rgba(255,210,120,.06)"/><line x1="120" y1="60" x2="320" y2="240" stroke="${R2}" stroke-width="3"/>`
+};
+return `<svg viewBox="0 0 1200 300" preserveAspectRatio="xMidYMax meet">${P[id]||""}</svg>`}
+
+/* ================= CHAT ================= */
+function renderChat(){const m=document.getElementById("msgs");if(!CUR.key){m.innerHTML="";return}
+const h=ST.chats[CUR.key]||[];let html="";
+if(!h.length)html=`<div class="m t">${CUR.type==="meet"?"Der Meetingroom ist bereit. Bring dein Anliegen ein – die Runde antwortet mit unterschiedlichen Perspektiven.":"Der Raum ist bereit. Stell deine Frage oder nutze einen Einstieg unten."}</div>`;
+h.forEach(x=>{
+if(x.r==="u")html+=`<div class="m u">${esc(x.t)}</div>`;
+else if(x.r==="m")html+=`<div class="m mara">${avatar(CH("mara"),34)}<div><b style="font-size:11px;color:#FF7088">Mara Adler · hat angeklopft</b><br>${esc(x.t)}</div></div>`;
+else if(CUR.type==="meet")html+=meetBubbles(x.t);
+else html+=`<div class="m a">${esc(x.t)}</div>`});
+m.innerHTML=html;m.scrollTop=m.scrollHeight}
+function meetBubbles(t){const segs=String(t).split(/\n(?=\s*\**[A-ZÄÖÜ][a-zäöüß]+\**\s*:)/);let h="";
+segs.forEach(s=>{s=s.trim();if(!s)return;
+const m=s.match(/^\**([A-ZÄÖÜ][a-zäöüß]+)\**\s*:\s*([\s\S]*)$/);
+if(m){const c=CHARS.find(x=>fname(x)===m[1]);
+if(c){h+=`<div class="mwho">${avatar(c,26)} ${c.name} · ${c.role}</div><div class="m a">${esc(m[2].trim())}</div>`;return}}
+h+=`<div class="m a">${esc(s)}</div>`});
+return h}
+function addMsg(r,t){if(!CUR.key)return;ST.chats[CUR.key]=ST.chats[CUR.key]||[];ST.chats[CUR.key].push({r,t});
+if(ST.chats[CUR.key].length>60)ST.chats[CUR.key]=ST.chats[CUR.key].slice(-60);save();renderChat()}
+function ephem(t,id){const m=document.getElementById("msgs");m.insertAdjacentHTML("beforeend",`<div class="m t"${id?` id="${id}"`:""}>${t}</div>`);m.scrollTop=m.scrollHeight}
+function unephem(){const e=document.getElementById("typ");if(e)e.remove()}
+function callClaude(system,messages,maxTok,model){
+return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":ST.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:model||ST.model,max_tokens:maxTok||800,system,messages})})
+.then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j.error&&j.error.message)||"HTTP "+r.status);return (j.content||[]).map(b=>b.text||"").join("")})}
+function errMsg(e){return /401|invalid x-api-key|authentication/i.test(e.message)?"API-Key ungültig – bitte in den Einstellungen prüfen.":/Failed to fetch|load/i.test(e.message)?"Keine Verbindung zur Claude API (Internet/Blocker prüfen).":e.message.replace(/</g,"&lt;")}
+function SYS(c){const lv=rlev(),rad=lv.some(x=>x>0)?` Heutiges Muster-Radar (0–3): ${RADAR.map((r,i)=>r+": "+lv[i]).join(", ")}.`:"";
+let extra="";
+if(c.id==="mara")extra=" Eröffne grundsätzlich mit der Gegenposition und benenne unbelegte Annahmen schonungslos.";
+if(c.id==="sophie")extra=" Du denkst beruflich UND privat: Termine, Energie, Familie, Erholung. Schütze Daniel aktiv vor Überlastung und sprich Grenzen offen an. Du hast direkten Zugriff auf ROH, die FamilySync-App von Daniel und seiner Frau Kim (Hund: Emma). Nutze die Live-Daten unten aktiv: weise auf Kollisionen zwischen Beruflichem und Privatem hin, denke an Emma-Tage, Geburtstage und gemeinsame Termine."+famCtx()+fsRules();
+return `Du bist ${c.name}, ${c.role} in DREOS, dem persönlichen Executive Operating System von Daniel Rohwedder. Ihr sitzt in deinem Büro im virtuellen DREOS-Office. Persönlichkeit: ${c.persona} Deine Leitfragen: ${c.fragen.join(" | ")}.${extra}
+Antworte IMMER in dieser Rolle, auf Deutsch, per Du, direkt und prägnant (meist unter 150 Wörtern), in Fließtext ohne Listen, wie in einem echten Gespräch unter Vertrauten. Fordere Daniel heraus, statt ihm zu gefallen. Stelle höchstens eine Rückfrage pro Antwort. Wenn im Verlauf ein Einwurf von Mara Adler auftaucht, beziehe dich darauf, wo es hilft.
+Kontext über Daniel: ${PROFILE}
+Aktiver Hut: ${HUTS[ST.hut].label} (${HUTS[ST.hut].sub})${rad}
+Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.`}
+function MEET_SYS(parts){const ps=parts.map(id=>{const c=CH(id);return `${fname(c)} (${c.name}, ${c.role}): ${c.persona} Leitfragen: ${c.fragen.join(" | ")}`}).join("\n");
+return `Du simulierst ein Meeting im Meetingroom von DREOS, dem persönlichen Executive Operating System von Daniel Rohwedder. Am Tisch sitzen:
+${ps}
+Daniel bringt sein Anliegen ein. Antworte als echte Gesprächsrunde: 2 bis ${Math.min(4,parts.length+1)} Wortmeldungen pro Antwort. JEDE Wortmeldung beginnt in einer neuen Zeile exakt mit dem Vornamen und Doppelpunkt (Beispiel: "${fname(CH(parts[0]))}: …"). Maximal 70 Wörter pro Wortmeldung. Die Charaktere bleiben strikt in ihrer Persönlichkeit, bauen aufeinander auf und widersprechen sich, wenn es der Sache dient.${parts.includes("mara")?" Mara eröffnet oder beendet mit der Gegenposition.":""} Kein Text außerhalb dieses Formats. Auf Deutsch, per Du, direkt, ohne Listen und ohne unnötiges Lob.
+Kontext über Daniel: ${PROFILE}
+Aktiver Hut: ${HUTS[ST.hut].label} (${HUTS[ST.hut].sub})
+Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.${parts.includes("sophie")?famCtx():""}`}
+let BUSY=false;
+function sendMsg(){const i=document.getElementById("ci"),t=i.value.trim();if(!t)return;i.value="";sendText(t)}
+function sendText(t){if(BUSY||!CUR.key)return;
+stopSpeak();addMsg("u",t);maraWatch(t);
+if(!ST.key){ephem("Ohne API-Key können die Charaktere hier nicht antworten – <a href='#' onclick='openSet();return false' style='color:#FF7088'>Einstellungen öffnen</a>.");return}
+BUSY=true;
+ephem(CUR.type==="meet"?"Die Runde berät…":fname(CH(CUR.id))+" denkt nach…","typ");
+const hist=(ST.chats[CUR.key]||[]).slice(-14).map(x=>({role:x.r==="u"?"user":"assistant",content:x.r==="m"?"[Einwurf von Mara Adler, Red Team, sie hat angeklopft]: "+x.t:x.t}));
+const msgs=[];hist.forEach(m=>{const l=msgs[msgs.length-1];if(l&&l.role===m.role)l.content+="\n\n"+m.content;else msgs.push({role:m.role,content:m.content})});
+while(msgs.length&&msgs[0].role!=="user")msgs.shift();
+const mkSys=()=>CUR.type==="meet"?MEET_SYS(CUR.parts):SYS(CH(CUR.id));
+((CUR.parts&&CUR.parts.includes("sophie"))?loadFamily().catch(()=>{}):Promise.resolve())
+.then(()=>callClaude(mkSys(),msgs,CUR.type==="meet"?1100:800))
+.then(txt=>{BUSY=false;unephem();
+let act=null;
+if(CUR.parts&&CUR.parts.includes("sophie")){const p=fsParse(txt);if(p){act=p.act;txt=p.clean}}
+addMsg("a",txt||"(leere Antwort)");
+if(txt)speakReply(txt);
+if(act)fsConfirm(act)})
+.catch(e=>{BUSY=false;unephem();ephem("⚠ "+errMsg(e))})}
+
+/* ================= TO-DO LISTEN ================= */
+function tdUid(){return "t"+Math.random().toString(36).slice(2,9)}
+function tdList(id){return ST.todos.lists.find(l=>l.id===id)}
+function tdSave(){save();todoRender()}
+function todoToggle(open){const p=document.getElementById("todoPanel");const o=open===undefined?!p.classList.contains("open"):open;p.classList.toggle("open",o)}
+function todoRender(){
+const lists=ST.todos.lists,hd=ST.todos.hideDone;
+const open=lists.reduce((n,l)=>n+(l.items||[]).filter(i=>!i.done).length,0);
+document.getElementById("todoCnt").textContent=open;
+document.getElementById("tdHideBtn").textContent=hd?"Erledigte einblenden":"Erledigte ausblenden";
+document.getElementById("tdStat").textContent=open+" offen";
+document.getElementById("tdbody").innerHTML=lists.length?lists.map(l=>{
+const its=hd?l.items.filter(i=>!i.done):l.items;
+return `<div class="tdlist${l.collapsed?" cls":""}">
+<div class="tdlh" onclick="tdList('${l.id}').collapsed=!tdList('${l.id}').collapsed;tdSave()">
+<span class="chv">▼</span><b ondblclick="event.stopPropagation();todoRename('${l.id}',this)" title="Doppelklick: umbenennen">${esc(l.name)}</b>
+<span class="lc">${l.items.filter(i=>!i.done).length} offen</span>
+<button class="del" onclick="event.stopPropagation();todoDelList('${l.id}')" title="Liste löschen">✕</button></div>
+<div class="tdlb">
+${its.map(i=>`<div class="tditem${i.done?" done":""}">
+<input type="checkbox"${i.done?" checked":""} onchange="todoCheck('${l.id}','${i.id}')">
+<span class="tx">${esc(i.text)}${i.source==="dreos"?'<span class="tdbadge">EXPERTE</span>':""}${i.created?`<span class="tddate">${i.created.slice(8,10)}.${i.created.slice(5,7)}.</span>`:""}</span>
+<button class="del" onclick="todoDel('${l.id}','${i.id}')" title="Löschen">✕</button></div>`).join("")||'<div class="tdempty">Keine offenen Punkte.</div>'}
+<div class="tdadd"><input data-l="${l.id}" placeholder="Neues To-do…" onkeydown="if(event.key==='Enter')todoAdd('${l.id}',this)"><button class="btn" onclick="todoAdd('${l.id}',this.previousElementSibling)">+</button></div>
+</div></div>`}).join(""):'<div class="tdempty">Noch keine Listen – oben „+ Liste" klicken.</div>'}
+function todoAdd(lid,inp){const t=inp.value.trim();if(!t)return;
+tdList(lid).items.push({id:tdUid(),text:t,done:false,created:today(),source:"manual"});
+tdSave();const ni=document.querySelector(`input[data-l='${lid}']`);if(ni)ni.focus()}
+function todoCheck(lid,iid){const i=tdList(lid).items.find(x=>x.id===iid);i.done=!i.done;tdSave()}
+function todoDel(lid,iid){const l=tdList(lid);l.items=l.items.filter(x=>x.id!==iid);tdSave()}
+function todoDelList(lid){const l=tdList(lid);if(!confirm(`Liste „${l.name}" wirklich löschen?`))return;
+ST.todos.lists=ST.todos.lists.filter(x=>x.id!==lid);tdSave()}
+function todoAddList(){const n=prompt("Name der neuen Liste:");if(!n||!n.trim())return;
+ST.todos.lists.push({id:tdUid(),name:n.trim(),collapsed:false,items:[]});tdSave()}
+function todoRename(lid,el){const l=tdList(lid);const inp=document.createElement("input");inp.className="tdrn";inp.value=l.name;
+inp.onclick=e=>e.stopPropagation();el.replaceWith(inp);inp.focus();inp.select();
+inp.onblur=()=>{l.name=inp.value.trim()||l.name;tdSave()};inp.onkeydown=e=>{if(e.key==="Enter")inp.blur()}}
+function todoHideDone(){ST.todos.hideDone=!ST.todos.hideDone;tdSave()}
+/* To-do-Vorschläge beim Verlassen eines Gesprächs */
+const TODO_SYS=`Du unterstützt Daniel Rohwedder in DREOS, seinem Executive Operating System. Analysiere den Gesprächsausschnitt zwischen Daniel und seinen virtuellen Experten. Extrahiere NUR konkrete offene Aufgaben für Daniel: Dinge, die er im Gespräch angenommen, vereinbart oder sich vorgenommen hat (auch Delegationen, die er anstoßen muss). Keine vagen Ideen, nichts bereits Erledigtes, keine Aufgaben der virtuellen Experten selbst. Maximal 5, prägnant formuliert (max. 12 Wörter, beginnend mit Verb). Antworte NUR mit JSON, ohne weiteren Text: {"todos":["…","…"]} oder {"todos":[]}`;
+let TPROP=[];
+function todoSuggest(key){
+if(!ST.key)return;
+const chat=ST.chats[key]||[];const seen=ST.todoSeen[key]||0;
+if(chat.slice(seen).filter(x=>x.r==="u").length<2)return;
+ST.todoSeen[key]=chat.length;save();
+const recent=chat.slice(Math.max(seen-4,0)).slice(-30).map(x=>(x.r==="u"?"Daniel":"Experte")+": "+x.t).join("\n");
+callClaude(TODO_SYS,[{role:"user",content:recent}],400,"claude-haiku-4-5-20251001")
+.then(txt=>{const j=parseJSON(txt);const ts=j&&Array.isArray(j.todos)?j.todos.filter(t=>typeof t==="string"&&t.trim()).map(t=>t.trim()).slice(0,5):[];
+if(ts.length)todoPropose(ts)})
+.catch(()=>{})}
+function todoPropose(ts){TPROP=ts;
+panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Offene To-dos aus dem Gespräch</h2><p class="desc" style="margin-top:6px">Das habe ich als offene Punkte herausgehört. Wähle aus, was auf deine Liste soll:</p>
+<div class="tdprop">${ts.map((t,i)=>`<label><input type="checkbox" checked id="tp${i}"> ${esc(t)}</label>`).join("")}</div>
+<div class="btnrow"><select id="tpl" style="background:#1F0F15;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:7px 10px;font-size:13px">${ST.todos.lists.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select><button class="btn go" onclick="todoAcceptProp()">Übernehmen</button><button class="btn" onclick="closeOvl()">Verwerfen</button></div>`;
+ovl.classList.add("show")}
+function todoAcceptProp(){
+let l=tdList(document.getElementById("tpl").value)||ST.todos.lists[0];
+if(!l){l={id:tdUid(),name:"Inbox",collapsed:false,items:[]};ST.todos.lists.push(l)}
+let n=0;TPROP.forEach((t,i)=>{const c=document.getElementById("tp"+i);if(c&&c.checked){l.items.push({id:tdUid(),text:t,done:false,created:today(),source:"dreos"});n++}});
+tdSave();closeOvl();if(n){toast("✓ "+n+(n===1?" To-do":" To-dos")+" übernommen");todoToggle(true)}}
+
+/* ================= SOPHIE-TRIAGE ================= */
+const KEYS={sophie:/(familie|privat|kim\b|emma|hund|wochenende|geburtstag|urlaub mit|gemeinsamer termin|zu hause|feierabend|erholung|work.?life)/i,
+henrik:/(struktur|organisation|orgdesign|rolle|skalier|operating.?model|aufbau|verantwortlichkeit|zielbild|flaschenhals)/i,
+ingrid:/(kpi|kennzahl|produktiv|steuerung|kosten|performance|report|forecast|auslastung)/i,
+samuel:/(talent|nachfolge|führungskraft|führungskräfte|entwickl|besetzung|mitarbeiter|team|potenzial)/i,
+carla:/(transformation|veränderung|change|akzeptanz|ownership|programm|rollout|widerstand im team)/i,
+adrian:/(\bki\b|\bai\b|technologie|system|automatisier|architektur|daten|tool|software)/i,
+konstantin:/(stakeholder|politik|schweda|schmid|ohlmeyer|ramke|konzern|gremium|kommunikation an|widerstand|holding|otto)/i,
+vera:/(ich selbst|unsicher|reflexion|coaching|muster|gewohnheit|führungsstil|loslassen|zweifel)/i,
+mara:/(entscheid|risiko|annahme|kritisch|challenge|pre.?mortem|investition)/i};
+const TRI_SYS=`Du bist Sophie Janssen, Personal Assistant und Empfang in DREOS, dem Executive Operating System von Daniel Rohwedder. Daniel platziert ein Anliegen bei dir. Schlage die richtige Besetzung vor.
+Verfügbare Experten (id – Fokus): vera – Executive Coach, Selbstreflexion, Führungsmuster; henrik – Organisationsdesign, Strukturen, Operating Model; ingrid – KPIs, Steuerung, Produktivität; samuel – Talent, Besetzungen, Nachfolge; carla – Transformation, Change, Ownership; adrian – Technologie, KI, Systeme; konstantin – Stakeholder, Konzernpolitik, Kommunikation; mara – Red Team, Entscheidungs-Check; sophie – das bist du selbst: Familie, Privates, Termine mit Kim, Emma (Hund), Urlaub, Geburtstage, Energie & Erholung. Bei privaten/familiären Anliegen wähle ["sophie"] – dann übernimmst du es direkt am Empfang.
+Regeln: 1 Experte bei klarem Einzelthema (dann 1:1 im Büro), 2 bis 4 bei mehrdimensionalen Themen (dann Meeting im Meetingroom). Bei wichtigen Entscheidungen Mara dazunehmen. Antworte NUR mit JSON, ohne weiteren Text: {"experts":["id"],"reason":"1–2 Sätze in deiner Stimme, per Du: warum diese Besetzung"}
+Kontext über Daniel: ${PROFILE}`;
+let TRI={text:"",sel:[]};
+function parseJSON(t){try{const m=String(t).match(/\{[\s\S]*\}/);return m?JSON.parse(m[0]):null}catch(e){return null}}
+function heur(t){const ids=Object.keys(KEYS).filter(k=>KEYS[k].test(t));const ex=ids.length?ids.slice(0,4):["vera"];
+return {experts:ex,reason:ex.length>1?"Das Thema hat mehrere Dimensionen – ich würde dir ein Meeting mit dieser Runde vorschlagen.":ex[0]==="sophie"?"Das ist privat – das übernehme ich direkt für dich.":"Das klingt nach einem guten 1:1 – ich würde dich zu "+fname(CH(ex[0]))+" bringen.",offline:!ST.key}}
+function askSophie(){const i=document.getElementById("triq"),t=i.value.trim();if(!t)return;TRI.text=t;
+document.getElementById("prop").innerHTML=`<div class="propbox"><div class="sb"><i>Sophie schaut, wer dir am besten hilft…</i></div></div>`;
+if(ST.key){callClaude(TRI_SYS,[{role:"user",content:t}],400)
+.then(txt=>{const j=parseJSON(txt);
+if(j&&Array.isArray(j.experts)&&j.experts.length){const ex=j.experts.filter(e=>CH(e)).slice(0,4);showProp({experts:ex.length?ex:["vera"],reason:j.reason||"",offline:false})}
+else showProp(heur(t))})
+.catch(()=>showProp(heur(t)))}
+else showProp(heur(t))}
+function showProp(r){
+if(r.experts.length===1&&r.experts[0]==="sophie"){const t=TRI.text;document.getElementById("prop").innerHTML="";document.getElementById("triq").value="";toast("Privates Thema – Sophie übernimmt direkt.");enterRoom("sophie",t);return}
+TRI.sel=r.experts.slice();
+document.getElementById("prop").innerHTML=`<div class="propbox"><div class="sb"><b style="color:var(--teal)">Sophie:</b> ${esc(r.reason)}${r.offline?" <span style='color:var(--sub)'>(Offline-Einschätzung – mit API-Key werde ich präziser.)</span>":""}<br><span style="color:var(--sub);font-size:12px">Passe die Besetzung an, indem du Avatare an- oder abwählst:</span></div><div class="chips" id="chips"></div><div class="btnrow"><button class="btn go" id="goBtn" onclick="acceptProp()"></button><button class="btn" onclick="document.getElementById('prop').innerHTML=''">Verwerfen</button></div></div>`;
+renderChips()}
+function renderChips(){const el=document.getElementById("chips");if(!el)return;
+el.innerHTML=CHARS.map(c=>`<div class="chip ${TRI.sel.includes(c.id)?"on":""}" onclick="togChip('${c.id}')">${avatar(c,52)}<div>${fname(c)}</div></div>`).join("");
+const n=TRI.sel.length,g=document.getElementById("goBtn");if(!g)return;
+g.textContent=n===0?"Mindestens eine Person wählen":n===1?"1:1 starten · Büro von "+fname(CH(TRI.sel[0]))+" betreten":"Meeting starten · Meetingroom betreten ("+n+" Experten)";
+g.disabled=n===0}
+function togChip(id){const i=TRI.sel.indexOf(id);if(i>=0)TRI.sel.splice(i,1);else TRI.sel.push(id);renderChips()}
+function acceptProp(){if(!TRI.sel.length)return;const t=TRI.text;
+document.getElementById("prop").innerHTML="";document.getElementById("triq").value="";closeOvl();
+if(TRI.sel.length===1)enterRoom(TRI.sel[0],t);else enterMeet(TRI.sel.slice(),t)}
+function boardSetup(){TRI={text:"",sel:[]};document.getElementById("prop").innerHTML="";
+panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Meetingroom besetzen</h2><p class="desc" style="margin-top:6px">Wähle die Experten für dein Meeting. Tipp: Platziere dein Anliegen bei Sophie am Empfang – sie schlägt dir die Besetzung vor.</p><div class="chips" id="chips"></div><div class="btnrow"><button class="btn go" id="goBtn" onclick="acceptProp()"></button></div>`;
+renderChips();ovl.classList.add("show")}
+
+/* ================= MARA-WACHE ================= */
+const MARAPAT=[
+{p:"Eingriffstiefe",re:/(mach(e)? ich (das )?(lieber )?selbst|übernehme ich|ich kümmere mich selbst|am besten selbst|selber machen|dann mach ich es eben)/i},
+{p:"Ungeduld",re:/(dauert (mir )?(alles )?zu lange|sofort umsetzen|schnell schnell|keine geduld|warum dauert das|muss jetzt endlich)/i},
+{p:"Perfektionismus",re:/(muss perfekt|100\s?%|fehlerfrei|nochmal komplett|von grund auf neu|noch nicht gut genug)/i},
+{p:"Zu viele Parallelthemen",re:/(parallel dazu|gleichzeitig noch|nebenbei noch|auch noch|on top|als drittes thema)/i},
+{p:"Überlastung",re:/(keine zeit|überlastet|zu viel auf dem tisch|wochenende durcharbeiten|heute nacht noch|komme nicht hinterher|schaffe (das|es) nicht)/i},
+{p:"Mentale Verantwortungsübernahme",re:/(verantwortung liegt (dann )?bei mir|muss ich (es )?richten|ohne mich (geht|läuft) (das )?nicht|liegt (alles )?an mir)/i}];
+const MARACAN={
+"Eingriffstiefe":"Du bist gerade dabei, es wieder selbst zu machen. Wessen Aufgabe ist das organisatorisch – und was lernt derjenige, wenn du übernimmst? Nichts. Was müsste passieren, damit du es lassen kannst?",
+"Ungeduld":"Du drückst aufs Tempo. Welche Information fehlt dir wirklich – oder erträgst du nur das Warten nicht? Was kostet eine zu frühe Entscheidung hier konkret?",
+"Perfektionismus":"Wie viel besser wird das Ergebnis durch die letzten 20 Prozent wirklich – und was bleibt dafür liegen? Nenn mir den Preis.",
+"Zu viele Parallelthemen":"Zähl mit: Wie viele Themen treibst du gerade parallel? Welches davon würde ein guter Geschäftsführer sofort stoppen oder abgeben?",
+"Überlastung":"Dein Takt ist gerade nicht haltbar. Was fällt diese Woche bewusst runter – und wer erfährt das aktiv von dir?",
+"Mentale Verantwortungsübernahme":"Du trägst gerade Verantwortung, die organisatorisch nicht deine ist. Wer müsste dieses Problem eigentlich wach halten – und warum schläft der ruhig, während du es trägst?"};
+const MON_SYS=`Du bist Mara Adler, Red Team in DREOS. Du beobachtest Daniels Gesprächsbeiträge im Hintergrund auf seine 6 Warnmuster: Ungeduld; zu hohe Eingriffstiefe (er erledigt Dinge selbst, die andere tun sollten); mentale Verantwortungsübernahme (er trägt fremde Verantwortung mit); Perfektionismus; zu viele Parallelthemen; Überlastung. Interveniere NUR bei klaren Signalen, nicht bei normaler Arbeit. Antworte NUR mit JSON, ohne weiteren Text: {"intervene":true/false,"pattern":"Name des Musters","message":"Dein Challenge an Daniel: trocken, direkt, per Du, maximal 60 Wörter, endet mit einer unbequemen Frage"}`;
+let MCNT=0,PEND=null;
+function maraWatch(t){if(!ST.mara.on)return;if(CUR.parts&&CUR.parts.includes("mara"))return;
+const now=Date.now();if(now<ST.mara.snz||now-(ST.mara.last||0)<4*60000)return;
+const hit=MARAPAT.find(m=>m.re.test(t));MCNT++;
+if(!hit&&MCNT<4)return;
+MCNT=0;
+if(ST.key){const recent=(ST.chats[CUR.key]||[]).filter(x=>x.r==="u").slice(-5).map(x=>x.t).join("\n---\n");
+callClaude(MON_SYS,[{role:"user",content:"Daniels letzte Gesprächsbeiträge:\n"+recent}],300,"claude-haiku-4-5-20251001")
+.then(txt=>{const j=parseJSON(txt);
+if(j&&j.intervene&&j.message)knock(j.pattern||"Muster erkannt",j.message);
+else if(hit)knock(hit.p,MARACAN[hit.p])})
+.catch(()=>{if(hit)knock(hit.p,MARACAN[hit.p])})}
+else if(hit)knock(hit.p,MARACAN[hit.p])}
+function knock(p,m){PEND={p,m};ST.mara.last=Date.now();save();
+document.getElementById("kav").innerHTML=avatar(CH("mara"),46);
+document.getElementById("ktxt").textContent="Sie meint, ein Muster zu erkennen: "+p+". Willst du hören, was sie zu sagen hat?";
+document.getElementById("knock").classList.add("show")}
+function maraIn(){document.getElementById("knock").classList.remove("show");
+if(PEND){if(CUR.key){addMsg("m",PEND.m);speak(PEND.m,"mara")}else toast("Mara: "+PEND.m)}PEND=null}
+function maraOut(){document.getElementById("knock").classList.remove("show");
+ST.mara.snz=Date.now()+30*60000;ST.mara.dis=(ST.mara.dis||0)+1;save();PEND=null;
+toast("Mara zieht sich zurück – 30 Minuten Ruhe.")}
+
+/* ================= MODALS ================= */
+const ovl=document.getElementById("ovl"),panel=document.getElementById("panel");
+function closeOvl(){ovl.classList.remove("show")}
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3200)}
+function openFok(){panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Fokusthemen</h2><ul class="fok" id="fok" style="margin-top:12px"></ul><div class="addf"><input id="nf" placeholder="Neues Fokusthema…" onkeydown="if(event.key==='Enter')addFok()"><button class="btn" onclick="addFok()">+</button></div>`;renderFok();ovl.classList.add("show")}
+function renderFok(){const el=document.getElementById("fok");if(el)el.innerHTML=ST.fokus.map((f,i)=>`<li>${esc(f)}<button onclick="ST.fokus.splice(${i},1);save();renderFok()" title="Entfernen">×</button></li>`).join("")}
+function addFok(){const v=document.getElementById("nf").value.trim();if(v){ST.fokus.push(v);save();renderFok();document.getElementById("nf").value=""}}
+function openRadar(){const lv=rlev();
+panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Muster-Radar</h2>
+<p class="desc" style="margin:8px 0 14px">Deine 6 Warnmuster (aus dem Living Profile). Markiere, wie stark sie heute wirken: 0 = ruhig … 3 = stark.</p>
+${RADAR.map((r,i)=>`<div class="radrow"><span>${r}</span><div class="lv">${[1,2,3].map(l=>`<b class="${lv[i]>=l?"on"+Math.min(lv[i],3):""}" onclick="setLv(${i},${l})"></b>`).join("")}</div></div>`).join("")}
+<div id="sopwarn"></div><div class="note">Stand wird pro Tag gespeichert und fließt in alle Gespräche ein. Nimm das Radar mit ins Wochencoaching (freitags 12:15).</div>`;
+ovl.classList.add("show");updWarn()}
+function setLv(i,l){const lv=rlev();lv[i]=lv[i]===l?l-1:l;ST.radar={date:today(),lv:lv};save();openRadar();renderRec()}
+function updWarn(){const lv=rlev(),w=document.getElementById("sopwarn");const hot=RADAR.filter((r,i)=>lv[i]>=2);
+if(hot.length){w.style.display="block";w.innerHTML=`<b>Sophie:</b> ${hot.join(", ")} ${hot.length>1?"sind":"ist"} heute hoch. Was davon kannst du abgeben oder vertagen?`}else w.style.display="none"}
+function openGov(){panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Governance-Landkarte</h2>
+<div class="gov" style="margin-top:14px">
+<div class="lvl"><div class="gbox"><b>Otto Group</b><small>Konzernmutter</small></div></div><div class="gline">│</div>
+<div class="lvl"><div class="gbox"><b>EOS Holding</b><small>CEO: Marwin Ramke</small></div></div><div class="gline">│</div>
+<div class="lvl"><div class="gbox"><b>Region Central Europe</b><small>Stephan Ohlmeyer</small></div></div><div class="gline">│</div>
+<div class="lvl">
+<div class="gbox me"><b>EOS Field Services GmbH</b><small>GF: <span style="color:#64AAB2">Daniel (Markt/Betrieb)</span><br>GF: Jörg Schweda (Kaufmännisch)</small></div>
+<div class="gbox"><b>EOS DID GmbH</b><small>GF: Jörg Schweda + Juliane Schmid<br><span style="color:#64AAB2">Daniel: Director Operations</span></small></div></div>
+<div class="lvl" style="margin-top:10px"><div class="gbox hl" style="max-width:420px"><b>⚠ Schweda-Doppelrolle</b><small>Peer im FS + Vorgesetzter im DID – maximal konzentrierte Abhängigkeit. Juliane Schmid ist das natürliche Gegengewicht: Beziehung bewusst pflegen.</small></div></div>
+</div>`;ovl.classList.add("show")}
+function openSet(){panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Einstellungen</h2>
+<div class="sec set"><h3>Claude API-Key</h3>
+<input type="password" id="sk" placeholder="sk-ant-…" value="${ST.key}">
+<select id="sm"><option value="claude-sonnet-4-6"${ST.model==="claude-sonnet-4-6"?" selected":""}>Claude Sonnet (empfohlen – stark &amp; günstig)</option><option value="claude-haiku-4-5-20251001"${ST.model==="claude-haiku-4-5-20251001"?" selected":""}>Claude Haiku (am günstigsten, schneller)</option><option value="claude-opus-4-8"${ST.model==="claude-opus-4-8"?" selected":""}>Claude Opus (am stärksten, teurer)</option></select>
+<div class="btnrow"><button class="btn" onclick="saveSet()">Speichern</button><button class="btn" onclick="testKey()">Verbindung testen</button></div>
+<div class="note" id="setst"></div>
+<div class="note">Key erstellen: <b>console.anthropic.com</b> → API Keys → Create Key. Abrechnung nach Verbrauch (Cent-Beträge pro Gespräch), unabhängig vom Claude-Abo. Der Key wird nur lokal in Safari gespeichert und nur an api.anthropic.com gesendet.</div></div>
+<div class="sec"><h3>Mara-Wache</h3>
+<label style="font-size:13px;color:var(--mut);display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="mw"${ST.mara.on?" checked":""} onchange="ST.mara.on=this.checked;save();keyNote()"> Mara beobachtet alle Gespräche und klopft bei Warnmustern an</label>
+<div class="note">„Jetzt nicht" pausiert sie 30 Minuten. Bisher abgewiesen: ${ST.mara.dis||0}×. Sophies Triage und Maras Wache nutzen Offline-Logik, wenn kein API-Key hinterlegt ist.</div></div>
+<div class="sec"><h3>Stimme &amp; Diktat</h3>
+<label style="font-size:13px;color:var(--mut);display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox"${ST.voice.out?" checked":""} onchange="ST.voice.out=this.checked;save();if(!this.checked)stopSpeak();updSpk()"> Antworten automatisch vorlesen</label>
+<select id="vsel" onchange="ST.voice.uri=this.value;save()" style="margin-top:8px">${(VOICES.length?VOICES:[]).map(v=>`<option value="${v.voiceURI}"${ST.voice.uri===v.voiceURI?" selected":""}>${v.name} (${v.lang})</option>`).join("")||"<option value=''>Standard (Deutsch)</option>"}</select>
+<label style="font-size:12px;color:var(--sub);display:flex;gap:10px;align-items:center;margin-top:8px">Tempo <input type="range" min="0.7" max="1.4" step="0.05" value="${ST.voice.rate||1}" oninput="ST.voice.rate=parseFloat(this.value);save()" style="flex:1"></label>
+<div class="btnrow"><button class="btn" onclick="speak('Guten Tag Daniel, so klinge ich. Die anderen liegen etwas höher oder tiefer.','sophie')">Probe hören</button><button class="btn" onclick="stopSpeak()">Stopp</button></div>
+<div class="note">Diktieren: 🎤 neben jedem Eingabefeld (einmalige Mikrofon-Freigabe im Browser). Jeder Charakter spricht mit eigener Tonlage und eigenem Tempo. Mehr/bessere deutsche Stimmen: Systemeinstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen laden (z.&nbsp;B. „Anna (Premium)") – die App nutzt sie automatisch.</div></div>
+<div class="sec"><h3>ROH FamilySync</h3>
+<label style="font-size:13px;color:var(--mut);display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="fsw"${ST.fam?" checked":""} onchange="ST.fam=this.checked;save();loadFamily(true)"> Sophie hat Zugriff auf eure Familien-App (Daniel, Kim &amp; Emma)</label>
+<div class="btnrow"><button class="btn" onclick="testFam()">Verbindung testen</button><button class="btn" onclick="window.open(FS.app,'_blank')">ROH öffnen</button></div>
+<div class="note" id="famst">${FAM.ok?"✓ Verbunden – Stand "+new Date(FAM.ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr":"Noch nicht geladen"}</div>
+<div class="sec"><h3>iPhone &amp; Geräte-Sync</h3>
+<div class="note" id="syncst">${SYNCAT?"✓ Letzter Abgleich: "+new Date(SYNCAT).toLocaleString("de-DE"):"Noch kein Abgleich in dieser Sitzung"}</div>
+<div class="btnrow"><button class="btn" onclick="syncNow()">Jetzt synchronisieren</button><button class="btn" onclick="changePass()">Passphrase ändern</button><button class="btn" onclick="lockNow()">Gerät sperren</button></div>
+<div class="note">Chats, Fokus, To-dos, Radar und Einstellungen werden Ende-zu-Ende-verschlüsselt über Supabase geteilt. Auf dem iPhone: Safari → Teilen → „Zum Home-Bildschirm hinzufügen".</div></div>
+<div class="note">Lesen: Status, Woche, Termine, Emma, Geburtstage, Urlaube. Schreiben: nur nach deiner Klick-Bestätigung; jede Aktion erscheint in ROHs Activity-Feed als „via DREOS“ – Kim sieht also alles.</div></div>
+<div class="sec"><h3>Gespräche</h3><div class="btnrow"><button class="btn r" onclick="if(confirm('Alle Gesprächsverläufe löschen?')){ST.chats={};save();renderChat();toast('Verläufe gelöscht')}">Alle Verläufe löschen</button></div></div>`;
+ovl.classList.add("show")}
+function saveSet(){ST.key=document.getElementById("sk").value.trim();ST.model=document.getElementById("sm").value;save();keyNote();toast("Gespeichert")}
+function testKey(){saveSet();const st=document.getElementById("setst");st.textContent="Teste…";
+fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":ST.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:ST.model,max_tokens:5,messages:[{role:"user",content:"ping"}]})})
+.then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j.error&&j.error.message)||"HTTP "+r.status);st.innerHTML="<span style='color:#7BC9A0'>✓ Verbindung steht – die Charaktere können antworten.</span>"})
+.catch(e=>{st.innerHTML="<span style='color:#FF7088'>✗ "+e.message.replace(/</g,"&lt;")+"</span>"})}
+function openInfo(){panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>DREOS Office 3.0</h2>
+<div class="sec"><h3>So arbeitest du hier</h3><p class="desc">Platziere jedes Anliegen bei <b>Sophie am Empfang</b> – sie schlägt dir 1:1 oder Meeting vor, du passt die Besetzung per Klick auf die Avatare an. Jeder Experte hat ein eigenes Büro, Meetings finden im Meetingroom statt. <b>Mara</b> beobachtet alle Gespräche im Hintergrund und klopft an, wenn sie eines deiner Warnmuster erkennt – du darfst sie jederzeit abweisen. Draußen wird es hell und dunkel wie in der echten Stadt (⏩ Zeitraffer im Header).</p></div>
+<div class="sec"><h3>Das geht nur in Cowork (Claude)</h3><p class="desc">Updates deines Living Profile und der Systemdateien · Dokumente/Präsentationen bauen · Wochencoaching mit Dateizugriff · Weiterentwicklung dieser App.</p></div>
+<div class="sec"><h3>Portrait-Status</h3>${CHARS.map(c=>`<div class="pst"><span>${c.name}</span><span>${PSTAT[c.id]||"Illustration (Fallback)"}</span></div>`).join("")}
+<div class="btnrow"><button class="btn" onclick="window.open(purl('mara'),'_blank')">Portrait-Testlink öffnen</button><button class="btn" onclick="closeOvl();setTimeout(openInfo,400)">Status aktualisieren</button></div>
+<div class="note">Eigene Bilder als <b>Avatare/sophie.jpg</b> usw. haben immer Vorrang (Prompts: Avatare/AVATAR_PROMPTS.md).</div></div>`;
+ovl.classList.add("show")}
+
+/* ================= LOBBY & START ================= */
+function lobby(){const lb=document.getElementById("lobby");const h=new Date().getHours();
+document.getElementById("lgreet").textContent=(h<5?"Gute Nacht":h<11?"Guten Morgen":h<18?"Guten Tag":"Guten Abend")+", Daniel.";
+document.getElementById("ldate").textContent=new Date().toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+" · Sophie erwartet dich am Empfang.";
+setTimeout(()=>lb.classList.add("s1"),250);
+setTimeout(()=>lb.classList.add("s2"),1500);
+setTimeout(()=>lb.classList.add("s3"),2300);
+const out=()=>lb.classList.add("out");
+const t=setTimeout(out,4800);
+lb.addEventListener("click",()=>{clearTimeout(t);lb.classList.add("s1","s2","s3");out()})}
+function testFam(){const st=document.getElementById("famst");if(st)st.textContent="Teste…";
+loadFamily(true).then(()=>{if(!st)return;st.innerHTML=FAM.ok?"<span style='color:#7BC9A0'>✓ Verbindung steht – Sophie sieht die Familiendaten.</span>":"<span style='color:#FF7088'>✗ Nicht erreichbar"+(FAM.err?": "+esc(FAM.err):"")+"</span>"})}
+function bootApp(){genScene();renderDoors();renderRec();todoRender();clock();setHut(ST.hut);updateSky();show("hub");lobby();
+loadFamily();setInterval(()=>{if(ST.fam)loadFamily(true)},10*60000);updSpk()}
+
+/* ================= ZUGRIFFSSCHUTZ + GERÄTE-SYNC ================= */
+const SYNCID="daniel-dreos";let KEY=null,SYNCAT=0,SYTMR=null;
+function lockBlob(){try{const o=JSON.parse(localStorage.getItem("dreosLock")||"null");if(o&&o.check&&o.prof)return o}catch(e){}return LOCK0}
+function b642buf(b){const s=atob(b);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a}
+function buf2b64(a){let s="";a=new Uint8Array(a);for(let i=0;i<a.length;i++)s+=String.fromCharCode(a[i]);return btoa(s)}
+function hex2buf(h){const a=new Uint8Array(h.length/2);for(let i=0;i<a.length;i++)a[i]=parseInt(h.substr(i*2,2),16);return a}
+async function deriveKey(p){const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(p),"PBKDF2",false,["deriveKey"]);
+ return crypto.subtle.deriveKey({name:"PBKDF2",salt:hex2buf(LOCK0.salt),iterations:250000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},true,["encrypt","decrypt"])}
+async function aesDec(k,b64){const d=b642buf(b64);const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:d.slice(0,12)},k,d.slice(12));return new TextDecoder().decode(pt)}
+async function aesEnc(k,txt){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},k,new TextEncoder().encode(txt)));const o=new Uint8Array(12+ct.length);o.set(iv);o.set(ct,12);return buf2b64(o)}
+async function lockOk(k){try{return(await aesDec(k,lockBlob().check))==="DREOS_OK"}catch(e){return false}}
+function lkMsg(t,c){const m=document.getElementById("lkmsg");if(m){m.textContent=t;m.style.color=c||"var(--sub)"}}
+async function syncFetchRaw(tmo){try{const c=new AbortController();const t=setTimeout(()=>c.abort(),tmo||4000);
+ const r=await fetch(FS.url+"/rest/v1/dreos_sync?id=eq."+SYNCID+"&select=payload,updated_at",{headers:{apikey:FS.key,Authorization:"Bearer "+FS.key},signal:c.signal});clearTimeout(t);
+ const rows=await r.json();return rows.length?rows[0].payload:null}catch(e){return null}}
+function mergeState(r){const lk=ST.key,lc=ST.chats||{};for(const k in r)ST[k]=r[k];
+ if(lk&&!ST.key)ST.key=lk;ST.chats=ST.chats||{};
+ for(const c in lc){const rc=ST.chats[c];if(!rc||lc[c].length>rc.length)ST.chats[c]=lc[c]}}
+async function syncPull(tmo){if(!KEY)return false;const p=await syncFetchRaw(tmo);if(!p)return false;
+ let remote;try{remote=JSON.parse(await aesDec(KEY,p))}catch(e){return false}
+ if((remote._ts||0)>(ST._ts||0)){mergeState(remote);localStorage.setItem("dreos2",JSON.stringify(ST));SYNCAT=Date.now();return true}
+ SYNCAT=Date.now();return false}
+async function pushCore(){if(!KEY)return;try{
+ const payload=await aesEnc(KEY,JSON.stringify(ST));const now=new Date().toISOString();
+ const r=await fsApi("dreos_sync?id=eq."+SYNCID,{method:"PATCH",body:JSON.stringify({payload,updated_at:now})});
+ const rows=await r.json().catch(()=>[]);
+ if(!Array.isArray(rows)||!rows.length)await fsApi("dreos_sync",{method:"POST",body:JSON.stringify({id:SYNCID,payload})});
+ SYNCAT=Date.now()}catch(e){}}
+function syncPush(){if(!KEY)return;clearTimeout(SYTMR);SYTMR=setTimeout(pushCore,1500)}
+async function syncNow(){const el=document.getElementById("syncst");if(el)el.textContent="Synchronisiere…";
+ const got=await syncPull(5000);await pushCore();
+ if(el)el.textContent="✓ Abgeglichen: "+new Date().toLocaleTimeString("de-DE");
+ if(got){toast("Neuer Stand übernommen – lade neu");setTimeout(()=>location.reload(),900)}}
+function lockNow(){localStorage.removeItem("dreosKraw");location.reload()}
+async function changePass(){const o=prompt("Aktuelle Passphrase:");if(o===null)return;
+ const k=await deriveKey(o);if(!await lockOk(k)){toast("Aktuelle Passphrase falsch");return}
+ const n=prompt("Neue Passphrase (mind. 8 Zeichen):");if(!n||n.length<8){toast("Zu kurz – nicht geändert");return}
+ const nk=await deriveKey(n);
+ const blob={check:await aesEnc(nk,"DREOS_OK"),prof:await aesEnc(nk,PROFILE)};
+ localStorage.setItem("dreosLock",JSON.stringify(blob));KEY=nk;
+ if(localStorage.getItem("dreosKraw")){const raw=await crypto.subtle.exportKey("raw",nk);localStorage.setItem("dreosKraw",buf2b64(raw))}
+ ST._lock=blob;save();toast("Passphrase geändert – gilt nach Sync auf allen Geräten")}
+async function startAfterUnlock(){document.getElementById("lock").classList.add("off");
+ await syncPull(3500);
+ if(ST._lock)localStorage.setItem("dreosLock",JSON.stringify(ST._lock));
+ try{PROFILE=await aesDec(KEY,lockBlob().prof)}catch(e){PROFILE=""}
+ bootApp();
+ if(location.protocol==="https:"&&"serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})}
+async function unlock(){const p=document.getElementById("lkpass").value;if(!p)return;
+ if(!window.crypto||!crypto.subtle){lkMsg("Dieser Browser unterstützt WebCrypto nicht.","#FF7088");return}
+ document.getElementById("lkbtn").textContent="Prüfe…";lkMsg("");
+ try{const k=await deriveKey(p);
+  if(await lockOk(k)){KEY=k;
+   if(document.getElementById("lkrem").checked){const raw=await crypto.subtle.exportKey("raw",k);localStorage.setItem("dreosKraw",buf2b64(raw))}
+   await startAfterUnlock();return}
+  const rp=await syncFetchRaw(5000);
+  if(rp){try{const st=JSON.parse(await aesDec(k,rp));
+   if(st&&st._lock)localStorage.setItem("dreosLock",JSON.stringify(st._lock));
+   else localStorage.setItem("dreosLock",JSON.stringify({check:await aesEnc(k,"DREOS_OK"),prof:await aesEnc(k,PROFILE||"")}));
+   KEY=k;if(document.getElementById("lkrem").checked){const raw=await crypto.subtle.exportKey("raw",k);localStorage.setItem("dreosKraw",buf2b64(raw))}
+   await startAfterUnlock();return}catch(e){}}
+  lkMsg("Falsche Passphrase.","#FF7088");document.getElementById("lkbtn").textContent="Entsperren"
+ }catch(e){lkMsg("Fehler: "+e.message,"#FF7088");document.getElementById("lkbtn").textContent="Entsperren"}}
+document.addEventListener("visibilitychange",async()=>{if(document.visibilityState!=="visible"||!KEY)return;
+ if(Date.now()-(window._lp||0)<30000)return;window._lp=Date.now();
+ const ci=document.getElementById("ci"),tq=document.getElementById("triq"),cb=document.getElementById("chatbox");
+ if((ci&&ci.value.trim())||(tq&&tq.value.trim())||(cb&&cb.style.display!=="none"))return;
+ if(await syncPull(4000)){toast("Neuer Stand vom anderen Gerät");setTimeout(()=>location.reload(),900)}});
+(async function boot(){
+ if(!window.crypto||!crypto.subtle){lkMsg("Dieser Browser unterstützt WebCrypto nicht – bitte Safari/Chrome verwenden.","#FF7088");return}
+ try{const raw=localStorage.getItem("dreosKraw");
+  if(raw){const k=await crypto.subtle.importKey("raw",b642buf(raw),"AES-GCM",true,["encrypt","decrypt"]);
+   if(await lockOk(k)){KEY=k;await startAfterUnlock();return}
+   localStorage.removeItem("dreosKraw")}}catch(e){}
+ setTimeout(()=>{const i=document.getElementById("lkpass");if(i)i.focus()},400)})();
+</script>
+</body>
+</html>
