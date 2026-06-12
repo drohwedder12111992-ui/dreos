@@ -561,7 +561,7 @@ const ST=JSON.parse(localStorage.getItem("dreos2")||"{}");
 ST.hut=ST.hut||"DID";
 ST.fokus=ST.fokus||["Erstes reales Arbeitsthema durch DREOS laufen lassen","Wochencoaching: jeden Freitag 12:15","Monatsreflexion Juli terminieren"];
 ST.radar=ST.radar||{};
-ST.chats=ST.chats||{};ST.hiddenChats=ST.hiddenChats||[];ST.key=ST.key||"";ST.model=ST.model||"claude-sonnet-4-6";ST.sessions=ST.sessions||[];
+ST.chats=ST.chats||{};ST.hiddenChats=ST.hiddenChats||[];ST.read=ST.read||{};ST.key=ST.key||"";ST.model=ST.model||"claude-sonnet-4-6";ST.sessions=ST.sessions||[];
 ST.mara=ST.mara||{on:true,snz:0,last:0,dis:0};
 ST.todos=ST.todos||{lists:[{id:"inbox",name:"Inbox",collapsed:false,items:[]}],hideDone:false};
 ST.todoSeen=ST.todoSeen||{};
@@ -794,7 +794,7 @@ document.getElementById("clouds").innerHTML=cl}
 
 /* ================= HUB ================= */
 function renderDoors(){let h="";
-CHARS.filter(c=>!c.desk).forEach(c=>{const cnt=(ST.chats[c.id]||[]).length;const badge=cnt>0?`<div class="dbadge">${cnt}</div>`:"";h+=`<div class="door ${c.red?"red":""}" onclick="enterRoom('${c.id}')"><div class="dbody"><div class="dlight"></div>${badge}${avatar(c,58)}<div class="dnm">${c.name}</div><div class="drl">${c.role}</div><div class="plate">BÜRO ${ROOMNO[c.id]}</div><div class="dhandle"></div></div></div>`});
+CHARS.filter(c=>!c.desk).forEach(c=>{const total=(ST.chats[c.id]||[]).length;const cnt=total-(ST.read[c.id]||0);const badge=cnt>0?`<div class="dbadge">${cnt}</div>`:"";h+=`<div class="door ${c.red?"red":""}" onclick="enterRoom('${c.id}')"><div class="dbody"><div class="dlight"></div>${badge}${avatar(c,58)}<div class="dnm">${c.name}</div><div class="drl">${c.role}</div><div class="plate">BÜRO ${ROOMNO[c.id]}</div><div class="dhandle"></div></div></div>`});
 h+=`<div class="door board" onclick="boardSetup()"><div class="dbody"><div class="dlight"></div><svg width="86" height="56" viewBox="0 0 86 58" style="margin-top:2px"><ellipse cx="43" cy="33" rx="33" ry="12" fill="none" stroke="#64AAB2" stroke-width="2"/><circle cx="43" cy="11" r="5" fill="#64AAB2"/><circle cx="12" cy="29" r="5" fill="#64AAB2"/><circle cx="74" cy="29" r="5" fill="#64AAB2"/><circle cx="27" cy="50" r="5" fill="#64AAB2"/><circle cx="59" cy="50" r="5" fill="#64AAB2"/></svg><div class="dnm">Meetingroom</div><div class="drl">Meeting mit mehreren Experten</div><div class="plate">MEETINGRAUM</div><div class="dhandle"></div></div></div>`;
 document.getElementById("doors").innerHTML=h}
 function renderRec(){const s=CH("sophie"),lv=rlev(),warn=lv[5]>=2||lv.filter(x=>x>=2).length>=3;
@@ -828,7 +828,7 @@ document.getElementById("rstarts").innerHTML=c.starts.map(s=>`<button onclick="p
 show("hub");document.getElementById("hub").classList.add("schat");
 mountChat("lslot");renderChat();keyNote();
 if(auto)setTimeout(()=>{const f=AUTO_FILES;AUTO_FILES=null;sendText(auto,f)},400)}
-function enterRoom(id,auto){if(id==="sophie")return enterLobbyChat(auto);const c=CH(id);CUR={type:"room",id:id,key:id,parts:[id]};
+function enterRoom(id,auto){if(id==="sophie")return enterLobbyChat(auto);const c=CH(id);CUR={type:"room",id:id,key:id,parts:[id]};ST.read[id]=(ST.chats[id]||[]).length;save();renderDoors();
 upsertSession(id,"room",[id]);
 document.getElementById("rtitle").textContent=(id==="sophie"?"Empfang":"Büro "+(ROOMNO[id]||""))+" · "+c.name;
 document.getElementById("rdecor").innerHTML=deco(id);
