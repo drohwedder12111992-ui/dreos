@@ -208,9 +208,11 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 .attbtn{background:rgba(100,170,178,.15)!important;border:1px solid rgba(100,170,178,.5)!important;font-size:17px!important;padding:0 11px!important;opacity:.9;transition:all .2s;color:#fff!important}
 .attbtn:hover{background:rgba(100,170,178,.28)!important;opacity:1}
 .attbtn.has-file{opacity:1;background:rgba(100,170,178,.3)!important;border-color:var(--teal)!important;box-shadow:0 0 8px rgba(100,170,178,.4)}
-#fileprev{width:100%;order:-1;display:none;align-items:center;gap:7px;background:rgba(100,170,178,.1);border:1px solid rgba(100,170,178,.35);border-radius:8px;padding:5px 10px;font-size:11.5px;color:var(--teal)}
-#fileprev span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#fileprev button{background:none;border:none;color:var(--mut);font-size:14px;padding:0;cursor:pointer;flex:none;line-height:1}
+#fileprev{width:100%;order:-1;display:none;flex-wrap:wrap;gap:6px}
+.fchip{display:flex;align-items:center;gap:7px;background:rgba(100,170,178,.1);border:1px solid rgba(100,170,178,.35);border-radius:8px;padding:5px 10px;font-size:11.5px;color:var(--teal);max-width:100%}
+.fchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.fchip button{background:none;border:none;color:var(--mut);font-size:14px;padding:0;cursor:pointer;flex:none;line-height:1}
+#docbar{display:none;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--sub)}
 .keynote{font-size:11.5px;color:var(--sub);padding:0 12px 10px;line-height:1.5}
 .rdecor{position:fixed;left:0;right:0;bottom:0;height:48vh;z-index:1;pointer-events:none;opacity:.5}
 .rdecor svg{width:100%;height:100%;display:block}
@@ -364,8 +366,8 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 <div id="rec">
 <div class="counter">
 <div class="rwho" id="recwho"></div>
-<input type="file" id="fileInTri" accept="image/*,.pdf,.txt,.docx,.pptx,.xlsx,.csv,.md" style="display:none" onchange="fileChosen(this)">
-<div id="fileprev-tri" style="display:none;align-items:center;gap:7px;background:rgba(100,170,178,.1);border:1px solid rgba(100,170,178,.35);border-radius:8px;padding:5px 10px;font-size:11.5px;color:var(--teal);margin-bottom:6px"><span id="fpname-tri" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button onclick="clearFileTri()" style="background:none;border:none;color:var(--mut);font-size:14px;padding:0;cursor:pointer">✕</button></div>
+<input type="file" id="fileInTri" accept="image/*,.pdf,.txt,.docx,.pptx,.xlsx,.csv,.md" multiple style="display:none" onchange="fileChosen(this)">
+<div id="fileprev-tri" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
 <div class="tri"><textarea id="triq" placeholder="Worum geht es, Daniel? Ich stelle dir die richtige Besetzung zusammen…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askSophie()}"></textarea><button class="micb" data-f="triq" onclick="micToggle('triq')" title="Diktieren">🎤</button><button class="attbtn" onclick="document.getElementById('fileInTri').click()" title="Datei anhängen">📎</button><button onclick="askSophie()" title="An Sophie">➤</button></div>
 <div id="prop"></div>
 <div id="famline"></div>
@@ -392,9 +394,10 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 <div class="rchat" id="chatbox" style="display:none">
 <div class="msgs" id="msgs"></div>
 <div class="rstarts" id="rstarts"></div>
+<div id="docbar"></div>
 <div class="crow">
-  <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.docx,.pptx,.xlsx,.csv,.md" style="display:none" onchange="fileChosen(this)">
-  <div id="fileprev"><span id="fpname"></span><button onclick="clearFile()" title="Entfernen">✕</button></div>
+  <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.docx,.pptx,.xlsx,.csv,.md" multiple style="display:none" onchange="fileChosen(this)">
+  <div id="fileprev"></div>
   <textarea id="ci" placeholder="Schreib hier… (oder 🎤 diktieren)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
   <button class="micb" data-f="ci" onclick="micToggle('ci')" title="Diktieren – sendet automatisch, wenn du aufhörst zu sprechen">🎤</button>
   <button class="attbtn" id="attbtn" onclick="document.getElementById('fileIn').click()" title="Datei anhängen">📎</button>
@@ -562,6 +565,8 @@ ST.chats=ST.chats||{};ST.key=ST.key||"";ST.model=ST.model||"claude-sonnet-4-6";S
 ST.mara=ST.mara||{on:true,snz:0,last:0,dis:0};
 ST.todos=ST.todos||{lists:[{id:"inbox",name:"Inbox",collapsed:false,items:[]}],hideDone:false};
 ST.todoSeen=ST.todoSeen||{};
+ST.docs=ST.docs||{};
+ST.modes=ST.modes||{};
 const PSTAT={};
 const IMGS=JSON.parse(localStorage.getItem("dreosImgs")||"{}");
 function saveImg(id,d){IMGS[id]=d;try{localStorage.setItem("dreosImgs",JSON.stringify(IMGS))}catch(e){}}
@@ -822,7 +827,7 @@ function enterLobbyChat(auto){const c=CH("sophie");stopSpeak();CUR={type:"room",
 document.getElementById("rstarts").innerHTML=c.starts.map(s=>`<button onclick="prefill('${s.replace(/'/g,"\\'")}')">${s}</button>`).join("");
 show("hub");document.getElementById("hub").classList.add("schat");
 mountChat("lslot");renderChat();keyNote();
-if(auto)setTimeout(()=>{const f=AUTO_FILE;AUTO_FILE=null;sendText(auto,f)},400)}
+if(auto)setTimeout(()=>{const f=AUTO_FILES;AUTO_FILES=null;sendText(auto,f)},400)}
 function enterRoom(id,auto){if(id==="sophie")return enterLobbyChat(auto);const c=CH(id);CUR={type:"room",id:id,key:id,parts:[id]};
 upsertSession(id,"room",[id]);
 document.getElementById("rtitle").textContent=(id==="sophie"?"Empfang":"Büro "+(ROOMNO[id]||""))+" · "+c.name;
@@ -830,18 +835,19 @@ document.getElementById("rdecor").innerHTML=deco(id);
 document.getElementById("rcard").innerHTML=`${avatar(c,128)}<h2 style="margin-top:12px;font-size:19px">${c.name}</h2><br><span class="pill ${c.red?"red":""}">${c.role}</span><div class="quote">„${c.quote}“</div><p class="desc">${c.persona}</p><div class="sec"><h3>Leitfragen</h3><ul class="qs">${c.fragen.map(f=>`<li>${f}</li>`).join("")}</ul></div>`;
 document.getElementById("rstarts").innerHTML=c.starts.map(s=>`<button onclick="prefill('${s.replace(/'/g,"\\'")}')">${s}</button>`).join("");
 mountChat("rslot");show("room");renderChat();keyNote();
-if(auto)setTimeout(()=>sendText(auto),400)}
-function enterMeet(ids,auto){ids=ids.slice(0,5);
+if(auto)setTimeout(()=>{const f=AUTO_FILES;AUTO_FILES=null;sendText(auto,f)},400)}
+function enterMeet(ids,auto,mode){ids=ids.slice(0,5);
 CUR={type:"meet",id:null,key:"meet:"+ids.slice().sort().join("-"),parts:ids};
+ST.modes=ST.modes||{};if(mode&&MODES[mode]){ST.modes[CUR.key]=mode;save()}
 upsertSession(CUR.key,"meet",ids);
-document.getElementById("mtitle").textContent="Meetingroom · "+ids.map(id=>fname(CH(id))).join(" · ");
+document.getElementById("mtitle").textContent="Meetingroom · "+MODES[meetMode()].label+" · "+ids.map(id=>fname(CH(id))).join(" · ");
 const n=ids.length;let seats="";
 ids.forEach((id,i)=>{const f=n===1?0.5:i/(n-1);const x=16+68*f,y=26-18*Math.sin(Math.PI*f);
 seats+=`<div class="seat" style="left:${x.toFixed(1)}%;top:${y.toFixed(0)}px">${avatar(CH(id),54)}<div>${fname(CH(id))}</div></div>`});
 document.getElementById("mtable").innerHTML=`<svg class="tbl" viewBox="0 0 800 120" preserveAspectRatio="none"><ellipse cx="400" cy="98" rx="340" ry="30" fill="rgba(30,15,22,.92)"/><ellipse cx="400" cy="88" rx="340" ry="30" fill="rgba(56,30,40,.96)" stroke="rgba(184,154,106,.6)"/></svg>${seats}`;
 document.getElementById("rstarts").innerHTML="";
 mountChat("mslot");show("meet");renderChat();keyNote();
-if(auto)setTimeout(()=>sendText(auto),400)}
+if(auto)setTimeout(()=>{const f=AUTO_FILES;AUTO_FILES=null;sendText(auto,f)},400)}
 function prefill(t){const i=document.getElementById("ci");i.value=t;i.focus()}
 function keyNote(){document.querySelectorAll(".keynote").forEach(k=>{
 k.innerHTML=ST.key?"Gespräche bleiben lokal gespeichert · Modell: "+ST.model.replace("claude-","").replace(/-\d+$/,"")+" · Mara-Wache: "+(ST.mara.on?"aktiv":"aus")+" · <a href='#' onclick='openSet();return false' style='color:#64AAB2'>Einstellungen</a>":"Noch kein API-Key hinterlegt – <a href='#' onclick='openSet();return false' style='color:#FF7088'>jetzt in den Einstellungen eintragen</a>, dann antworten die Charaktere direkt hier."})}
@@ -862,7 +868,7 @@ mara:`<rect x="420" y="230" width="360" height="12" fill="${D}"/><rect x="460" y
 return `<svg viewBox="0 0 1200 300" preserveAspectRatio="xMidYMax meet">${P[id]||""}</svg>`}
 
 /* ================= CHAT ================= */
-function renderChat(){const m=document.getElementById("msgs");if(!CUR.key){m.innerHTML="";return}
+function renderChat(){renderDocbar();const m=document.getElementById("msgs");if(!CUR.key){m.innerHTML="";return}
 const h=ST.chats[CUR.key]||[];let html="";
 if(!h.length)html=`<div class="m t">${CUR.type==="meet"?"Der Meetingroom ist bereit. Bring dein Anliegen ein – die Runde antwortet mit unterschiedlichen Perspektiven.":"Der Raum ist bereit. Stell deine Frage oder nutze einen Einstieg unten."}</div>`;
 h.forEach(x=>{
@@ -894,52 +900,101 @@ if(c.id==="mara")extra=" Eröffne grundsätzlich mit der Gegenposition und benen
 if(c.id==="sophie")extra=" Du denkst beruflich UND privat: Termine, Energie, Familie, Erholung. Schütze Daniel aktiv vor Überlastung und sprich Grenzen offen an. Du hast direkten Zugriff auf ROH, die FamilySync-App von Daniel und seiner Frau Kim (Hund: Emma). Nutze die Live-Daten unten aktiv: weise auf Kollisionen zwischen Beruflichem und Privatem hin, denke an Emma-Tage, Geburtstage und gemeinsame Termine."+famCtx()+fsRules();
 return `Du bist ${c.name}, ${c.role} in DREOS, dem persönlichen Executive Operating System von Daniel Rohwedder. Ihr sitzt in deinem Büro im virtuellen DREOS-Office. Persönlichkeit: ${c.persona} Deine Leitfragen: ${c.fragen.join(" | ")}.${extra}
 Antworte IMMER in dieser Rolle, auf Deutsch, per Du, direkt und prägnant (meist unter 150 Wörtern), in Fließtext ohne Listen, wie in einem echten Gespräch unter Vertrauten. Fordere Daniel heraus, statt ihm zu gefallen. Stelle höchstens eine Rückfrage pro Antwort. Wenn im Verlauf ein Einwurf von Mara Adler auftaucht, beziehe dich darauf, wo es hilft.
+Bleib strikt in deiner Expertise: Liegt Daniels Anliegen erkennbar (auch teilweise) außerhalb oder quer zu deinem Fachgebiet, sag das offen und empfiehl NAMENTLICH, welche Kolleg:innen er dazuholen sollte (1:1 oder als Meeting im Meetingroom) und warum – statt fachfremd mitzureden.
 Kontext über Daniel: ${PROFILE}
 Aktiver Hut: ${HUTS[ST.hut].label} (${HUTS[ST.hut].sub})${rad}
 Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.`}
+const MODES={
+meeting:{label:"Beratungsrunde",rules:`ZUSAMMENARBEITSMODELL BERATUNGSRUNDE: Jede:r spricht strikt aus der eigenen Expertise und nimmt namentlich Bezug auf die Vorredner, statt zu wiederholen. Fällt ein Punkt in das Fachgebiet eines anderen, wird ausdrücklich übergeben („Das ist deins, Ingrid"). Wenn Daniel eine Einschätzung oder ein Fazit will, endet die letzte Wortmeldung mit einer kurzen Synthese der Runde – inklusive offen benanntem Dissens.`},
+abgleich:{label:"Soll-Ist-Abgleich",rules:`ZUSAMMENARBEITSMODELL SOLL-IST-ABGLEICH: Arbeitet nach der DREOS-ABGLEICH-METHODE (steht unten bei den Dokumenten im Raum). Teilt die Schwerpunkte explizit nach Expertise auf und sagt, wer welchen Teil geprüft hat. Jede:r am Tisch meldet sich mindestens einmal. Liegen Soll- und Ist-Dokument noch nicht beide im Raum, fordert als Erstes konkret die fehlende Unterlage an, statt zu spekulieren. Wortlimits sind für dieses Format aufgehoben.`},
+entscheidung:{label:"Entscheidungsvorlage",rules:`ZUSAMMENARBEITSMODELL ENTSCHEIDUNG: Ihr arbeitet auf eine Entscheidung von Daniel hin. Über die Wortmeldungen hinweg: 1) Sachstand und ungeprüfte Annahmen klären, 2) echte Optionen mit Chancen, Risiken und Voraussetzungen aufmachen, 3) zwingend eine ernsthafte Gegenposition (Mara, sonst der kritischste Kopf am Tisch), 4) jede:r endet mit einer klaren persönlichen Empfehlung. Kein Konsenskuscheln: Dissens offen stehen lassen und präzise benennen, was genau Daniel entscheiden muss. Jede:r am Tisch meldet sich mindestens einmal; die Wortmeldungen dürfen länger sein als sonst.`},
+sparring:{label:"Sparring",rules:`ZUSAMMENARBEITSMODELL SPARRING: Ihr seid Denkpartner. Hypothesen aufstellen, Ideen der anderen aktiv weiterbauen oder begründet kontern – jede:r aus der eigenen Expertise. Lieber drei scharfe Gedanken als zehn flache. Endet mit der spannendsten offenen Frage an Daniel.`}};
+function meetMode(){return ST.modes&&MODES[ST.modes[CUR.key]]?ST.modes[CUR.key]:"meeting"}
 function MEET_SYS(parts){const ps=parts.map(id=>{const c=CH(id);return `${fname(c)} (${c.name}, ${c.role}): ${c.persona} Leitfragen: ${c.fragen.join(" | ")}`}).join("\n");
 return `Du simulierst ein Meeting im Meetingroom von DREOS, dem persönlichen Executive Operating System von Daniel Rohwedder. Am Tisch sitzen:
 ${ps}
-Daniel bringt sein Anliegen ein. Antworte als echte Gesprächsrunde: 2 bis ${Math.min(4,parts.length+1)} Wortmeldungen pro Antwort. JEDE Wortmeldung beginnt in einer neuen Zeile exakt mit dem Vornamen und Doppelpunkt (Beispiel: "${fname(CH(parts[0]))}: …"). Maximal 70 Wörter pro Wortmeldung. Die Charaktere bleiben strikt in ihrer Persönlichkeit, bauen aufeinander auf und widersprechen sich, wenn es der Sache dient.${parts.includes("mara")?" Mara eröffnet oder beendet mit der Gegenposition.":""} Kein Text außerhalb dieses Formats. Auf Deutsch, per Du, direkt, ohne Listen und ohne unnötiges Lob.
+Daniel bringt sein Anliegen ein. Antworte als echte Gesprächsrunde: 2 bis ${Math.min(4,parts.length+1)} Wortmeldungen pro Antwort. JEDE Wortmeldung beginnt in einer neuen Zeile exakt mit dem Vornamen und Doppelpunkt (Beispiel: "${fname(CH(parts[0]))}: …"). Maximal 70 Wörter pro Wortmeldung, sofern das Zusammenarbeitsmodell nichts anderes sagt. Die Charaktere bleiben strikt in ihrer Persönlichkeit, bauen aufeinander auf und widersprechen sich, wenn es der Sache dient.${parts.includes("mara")?" Mara eröffnet oder beendet mit der Gegenposition.":""} Kein Text außerhalb dieses Formats. Auf Deutsch, per Du, direkt, ohne Listen und ohne unnötiges Lob.
+${MODES[meetMode()].rules}
+Passt Daniels Anliegen erkennbar nicht mehr zum Zusammenarbeitsmodell (z. B. er will plötzlich entscheiden statt diskutieren), benennt das kurz und arbeitet im passenden Format weiter. Fehlt am Tisch eine entscheidende Expertise, sagt das offen und empfehlt namentlich, wen Daniel dazuholen sollte.
 Kontext über Daniel: ${PROFILE}
 Aktiver Hut: ${HUTS[ST.hut].label} (${HUTS[ST.hut].sub})
 Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.${parts.includes("sophie")?famCtx():""}`}
 let BUSY=false;
-let PENDFILE=null;
-let AUTO_FILE=null;
-function setFile(name,data,mime){PENDFILE={name,data,mime};const label="📎 "+name;document.getElementById("fpname").textContent=label;document.getElementById("fileprev").style.display="flex";if(document.getElementById("attbtn"))document.getElementById("attbtn").classList.add("has-file");document.getElementById("fpname-tri").textContent=label;document.getElementById("fileprev-tri").style.display="flex"}
+let PENDFILES=[];
+let AUTO_FILES=null;
+function xmlEnt(s){return String(s).replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#x([0-9a-fA-F]+);/g,(m,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&#(\d+);/g,(m,n)=>String.fromCodePoint(+n))}
+function xmlText(x){return xmlEnt(String(x).replace(/<\/(w:p|a:p)>/g,"\n").replace(/<(w:br|a:br|w:tab)[^>]*\/?>/g," ").replace(/<[^>]+>/g,"")).replace(/[ \t]+/g," ").replace(/ ?\n ?/g,"\n").replace(/\n{2,}/g,"\n").trim()}
+function extractOffice(f,ext){
+  return f.arrayBuffer().then(buf=>JSZip.loadAsync(buf)).then(zip=>{
+    const num=n=>parseInt((n.match(/(\d+)\.xml$/)||[0,"0"])[1],10);
+    if(ext==="docx"){const d=zip.file("word/document.xml");return d?d.async("string").then(xmlText):""}
+    if(ext==="pptx"){
+      const slides=Object.keys(zip.files).filter(n=>/^ppt\/slides\/slide\d+\.xml$/.test(n)).sort((a,b)=>num(a)-num(b));
+      return Promise.all(slides.map(n=>{const i=num(n),nf=zip.file("ppt/notesSlides/notesSlide"+i+".xml");
+        return Promise.all([zip.file(n).async("string"),nf?nf.async("string"):Promise.resolve("")])
+        .then(([sx,nx])=>{const t=xmlText(sx),nt=nx?xmlText(nx).replace(/\s*\d+\s*$/,""):"";
+          return "--- Folie "+i+" ---\n"+(t||"(ohne Text)")+(nt?"\n[Notiz] "+nt:"")})}))
+      .then(parts=>parts.join("\n"));
+    }
+    const ss=zip.file("xl/sharedStrings.xml");
+    const sheets=Object.keys(zip.files).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a,b)=>num(a)-num(b));
+    return Promise.all([ss?ss.async("string"):Promise.resolve("")].concat(sheets.map(n=>zip.file(n).async("string"))))
+    .then(parts=>xmlText(parts.join("\n")));
+  });
+}
 function fileChosen(input){
-  const f=input.files[0];if(!f)return;input.value="";
-  const ext=f.name.split(".").pop().toLowerCase();
-  if((ext==="docx"||ext==="pptx"||ext==="xlsx")&&typeof JSZip!=="undefined"){
-    f.arrayBuffer().then(buf=>JSZip.loadAsync(buf).then(zip=>{
-      let names=[];
-      if(ext==="docx")names=["word/document.xml"];
-      else if(ext==="pptx")names=Object.keys(zip.files).filter(n=>/^ppt\/slides\/slide\d+\.xml$/.test(n)).sort();
-      else names=Object.keys(zip.files).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort();
-      return Promise.all(names.map(n=>zip.file(n)?zip.file(n).async("string"):Promise.resolve("")));
-    }).then(parts=>{
-      const text=parts.join("\n").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,30000);
-      const b64=btoa(unescape(encodeURIComponent("[Inhalt aus "+f.name+"]\n\n"+text)));
-      setFile(f.name,b64,"text/plain");
-    })).catch(()=>toast("⚠ Datei konnte nicht gelesen werden."));
-  } else {
-    const reader=new FileReader();
-    reader.onload=e=>setFile(f.name,e.target.result.split(",")[1],f.type||"application/octet-stream");
-    reader.readAsDataURL(f);
-  }
+  const fl=Array.from(input.files||[]);input.value="";
+  fl.forEach(f=>{
+    const ext=f.name.split(".").pop().toLowerCase();
+    if((ext==="docx"||ext==="pptx"||ext==="xlsx")&&typeof JSZip!=="undefined"){
+      extractOffice(f,ext).then(text=>{text=String(text||"").slice(0,80000);
+        if(!text.trim())return toast("⚠ "+f.name+": kein Text gefunden.");
+        PENDFILES.push({name:f.name,kind:"doc",text});renderFilePrev()})
+      .catch(()=>toast("⚠ "+f.name+" konnte nicht gelesen werden."));
+    } else if(ext==="pdf"||/^image\//.test(f.type||"")){
+      const reader=new FileReader();
+      reader.onload=e=>{PENDFILES.push({name:f.name,kind:ext==="pdf"?"pdf":"image",mime:ext==="pdf"?"application/pdf":(f.type||"image/png"),data:e.target.result.split(",")[1]});renderFilePrev()};
+      reader.readAsDataURL(f);
+    } else {
+      const reader=new FileReader();
+      reader.onload=e=>{const text=String(e.target.result||"").slice(0,80000);
+        if(!text.trim())return toast("⚠ "+f.name+": kein Text gefunden.");
+        PENDFILES.push({name:f.name,kind:"doc",text});renderFilePrev()};
+      reader.readAsText(f);
+    }
+  });
 }
-function clearFile(){
-  PENDFILE=null;
-  document.getElementById("fileprev").style.display="none";
-  document.getElementById("fileprev-tri").style.display="none";
-  if(document.getElementById("attbtn"))document.getElementById("attbtn").classList.remove("has-file");
-}
+function renderFilePrev(){
+  const html=PENDFILES.map((f,i)=>`<div class="fchip"><span>📎 ${esc(f.name)}</span><button onclick="rmFile(${i})" title="Entfernen">✕</button></div>`).join("");
+  ["fileprev","fileprev-tri"].forEach(id=>{const el=document.getElementById(id);if(el){el.innerHTML=html;el.style.display=PENDFILES.length?"flex":"none"}});
+  const ab=document.getElementById("attbtn");if(ab)ab.classList.toggle("has-file",PENDFILES.length>0)}
+function rmFile(i){PENDFILES.splice(i,1);renderFilePrev()}
+function clearFile(){PENDFILES=[];renderFilePrev()}
 function clearFileTri(){clearFile()}
-function sendMsg(){const i=document.getElementById("ci"),t=i.value.trim();if(!t&&!PENDFILE)return;i.value="";const file=PENDFILE;clearFile();sendText(t||"📎",file)}
-function sendText(t,file){if(BUSY||!CUR.key)return;
+function renderDocbar(){const el=document.getElementById("docbar");if(!el)return;const ds=CUR.key?(ST.docs[CUR.key]||[]):[];
+  el.innerHTML=ds.length?`<span>📂 Dokumente im Raum:</span>`+ds.map((d,i)=>`<div class="fchip"><span>${esc(d.name)}</span><button onclick="rmDoc(${i})" title="Aus dem Raum entfernen">✕</button></div>`).join(""):"";
+  el.style.display=ds.length?"flex":"none"}
+function rmDoc(i){if(!CUR.key)return;const ds=ST.docs[CUR.key]||[];ds.splice(i,1);if(!ds.length)delete ST.docs[CUR.key];save();renderDocbar();toast("Dokument aus dem Raum entfernt.")}
+const REVIEW_RULES=`DREOS-ABGLEICH-METHODE: Wenn Daniel einen Abgleich, Review oder eine Abnahme möchte (z. B. Projektauftrag vs. Ergebnis) und mehrere Dokumente im Raum liegen, arbeite strikt so:
+1. Identifiziere, welches Dokument das SOLL ist (Auftrag/Anforderungen) und welches das IST (Ergebnis/Lieferung).
+2. Gehe die Anforderungen bzw. inhaltlichen Schwerpunkte des Auftrags EINZELN durch und bewerte jeden mit: erfüllt / teilweise erfüllt / offen – immer mit konkretem Beleg aus dem Ergebnisdokument.
+3. Benenne Lücken ehrlich – auch Strukturfehler im Auftrag selbst (fehlende messbare Abnahmekriterien, fehlendes Entscheidungsformat, unklare Verantwortung).
+4. Schließe mit offenen Punkten und konkreten nächsten Schritten für Daniel.
+Für diese Aufgabe sind die üblichen Wortlimits AUFGEHOBEN: antworte ausführlich, strukturiert und vollständig. Im Meeting teilt ihr die Schwerpunkte nach Expertise auf und widersprecht euch, wo es der Sache dient. Erfinde nichts, was nicht in den Dokumenten steht; wenn etwas in den Dokumenten fehlt, sage das ausdrücklich.`;
+function docsCtx(){const ds=CUR.key?(ST.docs[CUR.key]||[]):[];if(!ds.length)return "";
+  let s="\n\nIM RAUM EINGELESENE DOKUMENTE ("+ds.length+") – vollständig verfügbar, auch für Folgefragen:";
+  ds.forEach((d,i)=>{s+="\n\n=== DOKUMENT "+(i+1)+": "+d.name+" ===\n"+d.text});
+  s+="\n\n"+(ds.length>=2?REVIEW_RULES:"Beziehe dich konkret auf den Dokumentinhalt (mit Belegen), statt allgemein zu bleiben.");
+  return s}
+function sendMsg(){const i=document.getElementById("ci"),t=i.value.trim();if(!t&&!PENDFILES.length)return;i.value="";const files=PENDFILES.slice();clearFile();sendText(t||"📎",files)}
+function sendText(t,files){if(BUSY||!CUR.key)return;
 stopSpeak();
-const disp=file?(t==="📎"?"📎 "+file.name:t+"\n📎 "+file.name):t;
+files=files?(Array.isArray(files)?files:[files]):[];
+const docs=files.filter(f=>f.kind==="doc"),media=files.filter(f=>f.kind!=="doc");
+if(docs.length){let ds=(ST.docs[CUR.key]||[]).filter(d=>!docs.some(n=>n.name===d.name));
+ds=ds.concat(docs.map(d=>({name:d.name,text:String(d.text||"").slice(0,80000)}))).slice(-4);
+ST.docs[CUR.key]=ds;save();renderDocbar()}
+const disp=files.length?((t&&t!=="📎"?t+"\n":"")+files.map(f=>"📎 "+f.name).join("\n")):t;
 addMsg("u",disp);maraWatch(t);
 if(!ST.key){ephem("Ohne API-Key können die Charaktere hier nicht antworten – <a href='#' onclick='openSet();return false' style='color:#FF7088'>Einstellungen öffnen</a>.");return}
 BUSY=true;
@@ -947,19 +1002,12 @@ ephem(CUR.type==="meet"?"Die Runde berät…":fname(CH(CUR.id))+" denkt nach…"
 const hist=(ST.chats[CUR.key]||[]).slice(-14).map(x=>({role:x.r==="u"?"user":"assistant",content:x.r==="m"?"[Einwurf von Mara Adler, Red Team, sie hat angeklopft]: "+x.t:x.t}));
 const msgs=[];hist.forEach(m=>{const l=msgs[msgs.length-1];if(l&&l.role===m.role)l.content+="\n\n"+m.content;else msgs.push({role:m.role,content:m.content})});
 while(msgs.length&&msgs[0].role!=="user")msgs.shift();
-// Letzten User-Eintrag ggf. mit Datei als Content-Array ersetzen
-if(file&&msgs.length&&msgs[msgs.length-1].role==="user"){
-  const textPart=t&&t!=="📎"?t:"Bitte diese Datei analysieren und kommentieren.";
-  const blocks=[];
-  if(file.mime.startsWith("image/")){blocks.push({type:"image",source:{type:"base64",media_type:file.mime,data:file.data}})}
-  else if(file.mime==="application/pdf"){blocks.push({type:"document",source:{type:"base64",media_type:"application/pdf",data:file.data}})}
-  else{try{const decoded=decodeURIComponent(escape(atob(file.data)));blocks.push({type:"text",text:"[Anhang: "+file.name+"]\n"+decoded})}catch(e){blocks.push({type:"text",text:"[Anhang: "+file.name+" – Inhalt konnte nicht dekodiert werden]"})}}
-  blocks.push({type:"text",text:textPart});
-  msgs[msgs.length-1].content=blocks;
-}
-const mkSys=()=>CUR.type==="meet"?MEET_SYS(CUR.parts):SYS(CH(CUR.id));
+if(media.length&&msgs.length&&msgs[msgs.length-1].role==="user"){const textPart=typeof msgs[msgs.length-1].content==="string"?msgs[msgs.length-1].content:String(t||"Bitte analysieren und kommentieren.");const blocks=[];media.forEach(f=>{if(f.kind==="image")blocks.push({type:"image",source:{type:"base64",media_type:f.mime,data:f.data}});else blocks.push({type:"document",source:{type:"base64",media_type:"application/pdf",data:f.data}})});blocks.push({type:"text",text:textPart});msgs[msgs.length-1].content=blocks}
+const mkSys=()=>(CUR.type==="meet"?MEET_SYS(CUR.parts):SYS(CH(CUR.id)))+docsCtx();
+const nDocs=(ST.docs[CUR.key]||[]).length;
+const big=nDocs>0||(CUR.type==="meet"&&["abgleich","entscheidung"].includes(meetMode()));
 ((CUR.parts&&CUR.parts.includes("sophie"))?loadFamily().catch(()=>{}):Promise.resolve())
-.then(()=>callClaude(mkSys(),msgs,CUR.type==="meet"?1100:1200))
+.then(()=>callClaude(mkSys(),msgs,CUR.type==="meet"?(big?3600:1100):(big?2600:1200)))
 .then(txt=>{BUSY=false;unephem();
 let act=null;
 if(CUR.parts&&CUR.parts.includes("sophie")){const p=fsParse(txt);if(p){act=p.act;txt=p.clean}}
@@ -1042,37 +1090,48 @@ vera:/(ich selbst|unsicher|reflexion|coaching|muster|gewohnheit|führungsstil|lo
 mara:/(entscheid|risiko|annahme|kritisch|challenge|pre.?mortem|investition)/i};
 const TRI_SYS=`Du bist Sophie Janssen, Personal Assistant und Empfang in DREOS, dem Executive Operating System von Daniel Rohwedder. Daniel platziert ein Anliegen bei dir. Schlage die richtige Besetzung vor.
 Verfügbare Experten (id – Fokus): vera – Executive Coach, Selbstreflexion, Führungsmuster; henrik – Organisationsdesign, Strukturen, Operating Model; ingrid – KPIs, Steuerung, Produktivität; samuel – Talent, Besetzungen, Nachfolge; carla – Transformation, Change, Ownership; adrian – Technologie, KI, Systeme; konstantin – Stakeholder, Konzernpolitik, Kommunikation; mara – Red Team, Entscheidungs-Check; sophie – das bist du selbst: Familie, Privates, Termine mit Kim, Emma (Hund), Urlaub, Geburtstage, Energie & Erholung. Bei privaten/familiären Anliegen wähle ["sophie"] – dann übernimmst du es direkt am Empfang.
-Regeln: 1 Experte bei klarem Einzelthema (dann 1:1 im Büro), 2 bis 4 bei mehrdimensionalen Themen (dann Meeting im Meetingroom). Bei wichtigen Entscheidungen Mara dazunehmen. Antworte NUR mit JSON, ohne weiteren Text: {"experts":["id"],"reason":"1–2 Sätze in deiner Stimme, per Du: warum diese Besetzung"}
+Regeln: 1 Experte bei klarem Einzelthema (dann 1:1 im Büro), 2 bis 4 bei mehrdimensionalen Themen (dann Meeting im Meetingroom). Bei wichtigen Entscheidungen Mara dazunehmen. Wenn Daniel zwei oder mehr Dokumente anhängt (z. B. Projektauftrag und Ergebnispräsentation), ist das fast immer ein Soll-Ist-Abgleich bzw. eine Abnahme: schlage dann ein Meeting mit henrik (Struktur, Zielbild, Auftragsqualität) und ingrid (Steuerung, Messbarkeit, Wirtschaftlichkeit) vor, bei Entscheidungsrelevanz zusätzlich mara.
+Wähle zusätzlich das passende Zusammenarbeitsmodell ("mode") anhand des Anliegens: "dialog" = 1:1-Gespräch (nur bei 1 Experten); "meeting" = Beratungsrunde für Einschätzungen und mehrdimensionale Themen; "abgleich" = Dokumente gegeneinander prüfen, Abnahme, Review, Soll-Ist; "entscheidung" = Daniel muss etwas entscheiden – Optionen, Risiken, Gegenposition, klare Empfehlungen; "sparring" = Ideen entwickeln, Brainstorming, Hypothesen testen.
+Antworte NUR mit JSON, ohne weiteren Text: {"experts":["id"],"mode":"dialog|meeting|abgleich|entscheidung|sparring","reason":"1–2 Sätze in deiner Stimme, per Du: warum diese Besetzung und dieses Format"}
 Kontext über Daniel: ${PROFILE}`;
-let TRI={text:"",sel:[]};
+let TRI={text:"",sel:[],mode:"meeting"};
+function modeSelHTML(cur){return `<select id="modeSel" title="Zusammenarbeitsmodell" style="background:#1F0F15;border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:7px 10px;font-size:13px">${Object.keys(MODES).map(m=>`<option value="${m}"${m===cur?" selected":""}>${MODES[m].label}</option>`).join("")}</select>`}
 function parseJSON(t){try{const m=String(t).match(/\{[\s\S]*\}/);return m?JSON.parse(m[0]):null}catch(e){return null}}
 function heur(t){const ids=Object.keys(KEYS).filter(k=>KEYS[k].test(t));const ex=ids.length?ids.slice(0,4):["vera"];
-return {experts:ex,reason:ex.length>1?"Das Thema hat mehrere Dimensionen – ich würde dir ein Meeting mit dieser Runde vorschlagen.":ex[0]==="sophie"?"Das ist privat – das übernehme ich direkt für dich.":"Das klingt nach einem guten 1:1 – ich würde dich zu "+fname(CH(ex[0]))+" bringen.",offline:!ST.key}}
-function askSophie(){const i=document.getElementById("triq"),t=i.value.trim();if(!t&&!PENDFILE)return;TRI.text=t;
-if(PENDFILE){AUTO_FILE=PENDFILE;clearFile();i.value="";enterRoom("sophie",t||"📎 Datei");return};
+const mode=/(abgleich|abnahme|review|soll.?ist|projektauftrag.*ergebnis|gegenüberlegen|nebeneinander)/i.test(t)?"abgleich":/(entscheid|option|freigabe|go.no.go|investition)/i.test(t)?"entscheidung":/(brainstorm|idee|sparring|hypothese|durchdenken|spinnen)/i.test(t)?"sparring":"meeting";
+return {experts:ex,mode,reason:ex.length>1?"Das Thema hat mehrere Dimensionen – ich würde dir ein Meeting mit dieser Runde vorschlagen.":ex[0]==="sophie"?"Das ist privat – das übernehme ich direkt für dich.":"Das klingt nach einem guten 1:1 – ich würde dich zu "+fname(CH(ex[0]))+" bringen.",offline:!ST.key}}
+function askSophie(){const i=document.getElementById("triq");let t=i.value.trim();if(!t&&!PENDFILES.length)return;
+if(PENDFILES.length){AUTO_FILES=PENDFILES.slice();clearFile()}else AUTO_FILES=null;
+if(!t)t=AUTO_FILES&&AUTO_FILES.length>=2?"Bitte legt die angehängten Dokumente nebeneinander: Was ist erfüllt, was nicht? Welche offenen Punkte und nächsten Schritte ergeben sich?":"Bitte die angehängte Datei analysieren und kommentieren.";
+TRI.text=t;i.value="";
+const fnote=AUTO_FILES&&AUTO_FILES.length?"\n[Angehängte Dateien: "+AUTO_FILES.map(f=>f.name).join(", ")+"]":"";
+const fallback=()=>showProp(AUTO_FILES&&AUTO_FILES.length>=2?{experts:["henrik","ingrid","mara"],mode:"abgleich",reason:"Zwei Dokumente – das klingt nach einem Abgleich. Henrik prüft Struktur und Zielbild, Ingrid Steuerung und Wirtschaftlichkeit, Mara hält dagegen.",offline:!ST.key}:heur(t));
 document.getElementById("prop").innerHTML=`<div class="propbox"><div class="sb"><i>Sophie schaut, wer dir am besten hilft…</i></div></div>`;
-if(ST.key){callClaude(TRI_SYS,[{role:"user",content:t}],400)
+if(ST.key){callClaude(TRI_SYS,[{role:"user",content:t+fnote}],400)
 .then(txt=>{const j=parseJSON(txt);
-if(j&&Array.isArray(j.experts)&&j.experts.length){const ex=j.experts.filter(e=>CH(e)).slice(0,4);showProp({experts:ex.length?ex:["vera"],reason:j.reason||"",offline:false})}
-else showProp(heur(t))})
-.catch(()=>showProp(heur(t)))}
-else showProp(heur(t))}
+if(j&&Array.isArray(j.experts)&&j.experts.length){const ex=j.experts.filter(e=>CH(e)).slice(0,4);showProp({experts:ex.length?ex:["vera"],mode:j.mode,reason:j.reason||"",offline:false})}
+else fallback()})
+.catch(fallback)}
+else fallback()}
 function showProp(r){
 if(r.experts.length===1&&r.experts[0]==="sophie"){const t=TRI.text;document.getElementById("prop").innerHTML="";document.getElementById("triq").value="";toast("Privates Thema – Sophie übernimmt direkt.");enterRoom("sophie",t);return}
 TRI.sel=r.experts.slice();
-document.getElementById("prop").innerHTML=`<div class="propbox"><div class="sb"><b style="color:var(--teal)">Sophie:</b> ${esc(r.reason)}${r.offline?" <span style='color:var(--sub)'>(Offline-Einschätzung – mit API-Key werde ich präziser.)</span>":""}<br><span style="color:var(--sub);font-size:12px">Passe die Besetzung an, indem du Avatare an- oder abwählst:</span></div><div class="chips" id="chips"></div><div class="btnrow"><button class="btn go" id="goBtn" onclick="acceptProp()"></button><button class="btn" onclick="document.getElementById('prop').innerHTML=''">Verwerfen</button></div></div>`;
+TRI.mode=MODES[r.mode]?r.mode:(AUTO_FILES&&AUTO_FILES.length>=2?"abgleich":"meeting");
+document.getElementById("prop").innerHTML=`<div class="propbox"><div class="sb"><b style="color:var(--teal)">Sophie:</b> ${esc(r.reason)}${r.offline?" <span style='color:var(--sub)'>(Offline-Einschätzung – mit API-Key werde ich präziser.)</span>":""}<br><span style="color:var(--sub);font-size:12px">Passe Besetzung (Avatare) und Zusammenarbeitsmodell an:</span></div><div class="chips" id="chips"></div><div class="btnrow">${modeSelHTML(TRI.mode)}<button class="btn go" id="goBtn" onclick="acceptProp()"></button><button class="btn" onclick="AUTO_FILES=null;document.getElementById('prop').innerHTML=''">Verwerfen</button></div></div>`;
 renderChips()}
 function renderChips(){const el=document.getElementById("chips");if(!el)return;
 el.innerHTML=CHARS.map(c=>`<div class="chip ${TRI.sel.includes(c.id)?"on":""}" onclick="togChip('${c.id}')">${avatar(c,52)}<div>${fname(c)}</div></div>`).join("");
 const n=TRI.sel.length,g=document.getElementById("goBtn");if(!g)return;
 g.textContent=n===0?"Mindestens eine Person wählen":n===1?"1:1 starten · Büro von "+fname(CH(TRI.sel[0]))+" betreten":"Meeting starten · Meetingroom betreten ("+n+" Experten)";
-g.disabled=n===0}
+g.disabled=n===0;
+const ms=document.getElementById("modeSel");if(ms)ms.style.display=n>1?"":"none"}
 function togChip(id){const i=TRI.sel.indexOf(id);if(i>=0)TRI.sel.splice(i,1);else TRI.sel.push(id);renderChips()}
 function acceptProp(){if(!TRI.sel.length)return;const t=TRI.text;
+const ms=document.getElementById("modeSel");const mode=(ms&&MODES[ms.value])?ms.value:(MODES[TRI.mode]?TRI.mode:"meeting");
 document.getElementById("prop").innerHTML="";document.getElementById("triq").value="";closeOvl();
-if(TRI.sel.length===1)enterRoom(TRI.sel[0],t);else enterMeet(TRI.sel.slice(),t)}
-function boardSetup(){TRI={text:"",sel:[]};document.getElementById("prop").innerHTML="";
-panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Meetingroom besetzen</h2><p class="desc" style="margin-top:6px">Wähle die Experten für dein Meeting. Tipp: Platziere dein Anliegen bei Sophie am Empfang – sie schlägt dir die Besetzung vor.</p><div class="chips" id="chips"></div><div class="btnrow"><button class="btn go" id="goBtn" onclick="acceptProp()"></button></div>`;
+if(TRI.sel.length===1)enterRoom(TRI.sel[0],t);else enterMeet(TRI.sel.slice(),t,mode)}
+function boardSetup(){TRI={text:"",sel:[],mode:"meeting"};document.getElementById("prop").innerHTML="";
+panel.innerHTML=`<button class="x" onclick="closeOvl()">×</button><h2>Meetingroom besetzen</h2><p class="desc" style="margin-top:6px">Wähle Experten und Zusammenarbeitsmodell. Tipp: Platziere dein Anliegen bei Sophie am Empfang – sie schlägt dir Besetzung und Format vor.</p><div class="chips" id="chips"></div><div class="btnrow">${modeSelHTML("meeting")}<button class="btn go" id="goBtn" onclick="acceptProp()"></button></div>`;
 renderChips();ovl.classList.add("show")}
 
 /* ================= MARA-WACHE ================= */
@@ -1219,9 +1278,10 @@ function lkMsg(t,c){const m=document.getElementById("lkmsg");if(m){m.textContent
 async function syncFetchRaw(tmo){try{const c=new AbortController();const t=setTimeout(()=>c.abort(),tmo||4000);
  const r=await fetch(FS.url+"/rest/v1/dreos_sync?id=eq."+SYNCID+"&select=payload,updated_at",{headers:{apikey:FS.key,Authorization:"Bearer "+FS.key},signal:c.signal});clearTimeout(t);
  const rows=await r.json();return rows.length?rows[0].payload:null}catch(e){return null}}
-function mergeState(r){const lk=ST.key,lc=ST.chats||{},lt=ST.todos,lf=ST.fokus;for(const k in r)ST[k]=r[k];
- if(lk&&!ST.key)ST.key=lk;ST.chats=ST.chats||{};
+function mergeState(r){const lk=ST.key,lc=ST.chats||{},lt=ST.todos,lf=ST.fokus,ld=ST.docs||{};for(const k in r)ST[k]=r[k];
+ if(lk&&!ST.key)ST.key=lk;ST.chats=ST.chats||{};ST.docs=ST.docs||{};
  for(const c in lc){const rc=ST.chats[c];if(!rc||lc[c].length>rc.length)ST.chats[c]=lc[c]}
+ for(const c in ld){if(!ST.docs[c]||!ST.docs[c].length)ST.docs[c]=ld[c]}
  const tn=t=>t&&t.lists?t.lists.reduce((s,l)=>s+(l.items||[]).length,0):0;
  if(tn(ST.todos)===0&&tn(lt)>0)ST.todos=lt;
  if(lf&&lf.length&&(!ST.fokus||!ST.fokus.length))ST.fokus=lf}
