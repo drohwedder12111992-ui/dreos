@@ -323,6 +323,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
  .rtop{padding-top:calc(6px + env(safe-area-inset-top))}
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -362,7 +363,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 <div id="rec">
 <div class="counter">
 <div class="rwho" id="recwho"></div>
-<input type="file" id="fileInTri" accept="image/*,.pdf,.txt" style="display:none" onchange="fileChosen(this)">
+<input type="file" id="fileInTri" accept="image/*,.pdf,.txt,.docx,.pptx,.xlsx,.csv,.md" style="display:none" onchange="fileChosen(this)">
 <div id="fileprev-tri" style="display:none;align-items:center;gap:7px;background:rgba(100,170,178,.1);border:1px solid rgba(100,170,178,.35);border-radius:8px;padding:5px 10px;font-size:11.5px;color:var(--teal);margin-bottom:6px"><span id="fpname-tri" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button onclick="clearFileTri()" style="background:none;border:none;color:var(--mut);font-size:14px;padding:0;cursor:pointer">✕</button></div>
 <div class="tri"><textarea id="triq" placeholder="Worum geht es, Daniel? Ich stelle dir die richtige Besetzung zusammen…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askSophie()}"></textarea><button class="micb" data-f="triq" onclick="micToggle('triq')" title="Diktieren">🎤</button><button class="attbtn" onclick="document.getElementById('fileInTri').click()" title="Datei anhängen">📎</button><button onclick="askSophie()" title="An Sophie">➤</button></div>
 <div id="prop"></div>
@@ -391,7 +392,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 <div class="msgs" id="msgs"></div>
 <div class="rstarts" id="rstarts"></div>
 <div class="crow">
-  <input type="file" id="fileIn" accept="image/*,.pdf,.txt" style="display:none" onchange="fileChosen(this)">
+  <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.docx,.pptx,.xlsx,.csv,.md" style="display:none" onchange="fileChosen(this)">
   <div id="fileprev"><span id="fpname"></span><button onclick="clearFile()" title="Entfernen">✕</button></div>
   <textarea id="ci" placeholder="Schreib hier… (oder 🎤 diktieren)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
   <button class="micb" data-f="ci" onclick="micToggle('ci')" title="Diktieren – sendet automatisch, wenn du aufhörst zu sprechen">🎤</button>
@@ -905,21 +906,27 @@ Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.${parts.includes("sophie")?famCtx()
 let BUSY=false;
 let PENDFILE=null;
 let AUTO_FILE=null;
+function setFile(name,data,mime){PENDFILE={name,data,mime};const label="📎 "+name;document.getElementById("fpname").textContent=label;document.getElementById("fileprev").style.display="flex";if(document.getElementById("attbtn"))document.getElementById("attbtn").classList.add("has-file");document.getElementById("fpname-tri").textContent=label;document.getElementById("fileprev-tri").style.display="flex"}
 function fileChosen(input){
-  const f=input.files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const data=e.target.result.split(",")[1];
-    const mime=f.type||"application/octet-stream";
-    PENDFILE={name:f.name,data,mime};
-    document.getElementById("fpname").textContent="📎 "+f.name;
-    document.getElementById("fileprev").style.display="flex";
-    if(document.getElementById("attbtn"))document.getElementById("attbtn").classList.add("has-file");
-    document.getElementById("fpname-tri").textContent="📎 "+f.name;
-    document.getElementById("fileprev-tri").style.display="flex";
-  };
-  reader.readAsDataURL(f);
-  input.value="";
+  const f=input.files[0];if(!f)return;input.value="";
+  const ext=f.name.split(".").pop().toLowerCase();
+  if((ext==="docx"||ext==="pptx"||ext==="xlsx")&&typeof JSZip!=="undefined"){
+    f.arrayBuffer().then(buf=>JSZip.loadAsync(buf).then(zip=>{
+      let names=[];
+      if(ext==="docx")names=["word/document.xml"];
+      else if(ext==="pptx")names=Object.keys(zip.files).filter(n=>/^ppt\/slides\/slide\d+\.xml$/.test(n)).sort();
+      else names=Object.keys(zip.files).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort();
+      return Promise.all(names.map(n=>zip.file(n)?zip.file(n).async("string"):Promise.resolve("")));
+    }).then(parts=>{
+      const text=parts.join("\n").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,30000);
+      const b64=btoa(unescape(encodeURIComponent("[Inhalt aus "+f.name+"]\n\n"+text)));
+      setFile(f.name,b64,"text/plain");
+    })).catch(()=>toast("⚠ Datei konnte nicht gelesen werden."));
+  } else {
+    const reader=new FileReader();
+    reader.onload=e=>setFile(f.name,e.target.result.split(",")[1],f.type||"application/octet-stream");
+    reader.readAsDataURL(f);
+  }
 }
 function clearFile(){
   PENDFILE=null;
