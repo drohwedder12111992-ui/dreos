@@ -362,7 +362,9 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 <div id="rec">
 <div class="counter">
 <div class="rwho" id="recwho"></div>
-<div class="tri"><textarea id="triq" placeholder="Worum geht es, Daniel? Ich stelle dir die richtige Besetzung zusammen…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askSophie()}"></textarea><button class="micb" data-f="triq" onclick="micToggle('triq')" title="Diktieren">🎤</button><button onclick="askSophie()" title="An Sophie">➤</button></div>
+<input type="file" id="fileInTri" accept="image/*,.pdf,.txt" style="display:none" onchange="fileChosen(this)">
+<div id="fileprev-tri" style="display:none;align-items:center;gap:7px;background:rgba(100,170,178,.1);border:1px solid rgba(100,170,178,.35);border-radius:8px;padding:5px 10px;font-size:11.5px;color:var(--teal);margin-bottom:6px"><span id="fpname-tri" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button onclick="clearFileTri()" style="background:none;border:none;color:var(--mut);font-size:14px;padding:0;cursor:pointer">✕</button></div>
+<div class="tri"><textarea id="triq" placeholder="Worum geht es, Daniel? Ich stelle dir die richtige Besetzung zusammen…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askSophie()}"></textarea><button class="micb" data-f="triq" onclick="micToggle('triq')" title="Diktieren">🎤</button><button class="attbtn" onclick="document.getElementById('fileInTri').click()" title="Datei anhängen">📎</button><button onclick="askSophie()" title="An Sophie">➤</button></div>
 <div id="prop"></div>
 <div id="famline"></div>
 <div class="btnrow"><button class="btn" onclick="enterRoom('sophie')">💬 Mit Sophie sprechen</button><button class="btn" onclick="todoToggle(true)">✅ To-dos</button><button class="btn" onclick="openFam()">🏠 Familie</button></div>
@@ -818,7 +820,7 @@ function enterLobbyChat(auto){const c=CH("sophie");stopSpeak();CUR={type:"room",
 document.getElementById("rstarts").innerHTML=c.starts.map(s=>`<button onclick="prefill('${s.replace(/'/g,"\\'")}')">${s}</button>`).join("");
 show("hub");document.getElementById("hub").classList.add("schat");
 mountChat("lslot");renderChat();keyNote();
-if(auto)setTimeout(()=>sendText(auto),400)}
+if(auto)setTimeout(()=>{const f=AUTO_FILE;AUTO_FILE=null;sendText(auto,f)},400)}
 function enterRoom(id,auto){if(id==="sophie")return enterLobbyChat(auto);const c=CH(id);CUR={type:"room",id:id,key:id,parts:[id]};
 upsertSession(id,"room",[id]);
 document.getElementById("rtitle").textContent=(id==="sophie"?"Empfang":"Büro "+(ROOMNO[id]||""))+" · "+c.name;
@@ -902,6 +904,7 @@ Aktiver Hut: ${HUTS[ST.hut].label} (${HUTS[ST.hut].sub})
 Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.${parts.includes("sophie")?famCtx():""}`}
 let BUSY=false;
 let PENDFILE=null;
+let AUTO_FILE=null;
 function fileChosen(input){
   const f=input.files[0];if(!f)return;
   const reader=new FileReader();
@@ -911,7 +914,9 @@ function fileChosen(input){
     PENDFILE={name:f.name,data,mime};
     document.getElementById("fpname").textContent="📎 "+f.name;
     document.getElementById("fileprev").style.display="flex";
-    document.getElementById("attbtn").classList.add("has-file");
+    if(document.getElementById("attbtn"))document.getElementById("attbtn").classList.add("has-file");
+    document.getElementById("fpname-tri").textContent="📎 "+f.name;
+    document.getElementById("fileprev-tri").style.display="flex";
   };
   reader.readAsDataURL(f);
   input.value="";
@@ -919,8 +924,10 @@ function fileChosen(input){
 function clearFile(){
   PENDFILE=null;
   document.getElementById("fileprev").style.display="none";
-  document.getElementById("attbtn").classList.remove("has-file");
+  document.getElementById("fileprev-tri").style.display="none";
+  if(document.getElementById("attbtn"))document.getElementById("attbtn").classList.remove("has-file");
 }
+function clearFileTri(){clearFile()}
 function sendMsg(){const i=document.getElementById("ci"),t=i.value.trim();if(!t&&!PENDFILE)return;i.value="";const file=PENDFILE;clearFile();sendText(t||"📎",file)}
 function sendText(t,file){if(BUSY||!CUR.key)return;
 stopSpeak();
@@ -1032,7 +1039,8 @@ let TRI={text:"",sel:[]};
 function parseJSON(t){try{const m=String(t).match(/\{[\s\S]*\}/);return m?JSON.parse(m[0]):null}catch(e){return null}}
 function heur(t){const ids=Object.keys(KEYS).filter(k=>KEYS[k].test(t));const ex=ids.length?ids.slice(0,4):["vera"];
 return {experts:ex,reason:ex.length>1?"Das Thema hat mehrere Dimensionen – ich würde dir ein Meeting mit dieser Runde vorschlagen.":ex[0]==="sophie"?"Das ist privat – das übernehme ich direkt für dich.":"Das klingt nach einem guten 1:1 – ich würde dich zu "+fname(CH(ex[0]))+" bringen.",offline:!ST.key}}
-function askSophie(){const i=document.getElementById("triq"),t=i.value.trim();if(!t)return;TRI.text=t;
+function askSophie(){const i=document.getElementById("triq"),t=i.value.trim();if(!t&&!PENDFILE)return;TRI.text=t;
+if(PENDFILE){AUTO_FILE=PENDFILE;clearFile();i.value="";enterRoom("sophie",t||"📎 Datei");return};
 document.getElementById("prop").innerHTML=`<div class="propbox"><div class="sb"><i>Sophie schaut, wer dir am besten hilft…</i></div></div>`;
 if(ST.key){callClaude(TRI_SYS,[{role:"user",content:t}],400)
 .then(txt=>{const j=parseJSON(txt);
