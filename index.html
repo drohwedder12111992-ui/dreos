@@ -183,9 +183,14 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 .rstarts{display:flex;gap:6px;overflow-x:auto;padding:8px 10px 0;scrollbar-width:thin}
 .rstarts button{flex:0 0 auto;background:rgba(31,15,21,.85);border:1px solid var(--line);color:var(--mut);border-radius:9px;padding:7px 10px;font-size:12px;white-space:nowrap}
 .rstarts button:hover{border-color:var(--red);color:var(--txt)}
-.crow{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);margin-top:8px}
-.crow textarea{flex:1;background:rgba(36,18,24,.9);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:9px 11px;font-size:13.5px;resize:none;height:44px;font-family:inherit}
+.crow{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border-top:1px solid var(--line);margin-top:8px}
+.crow textarea{flex:1;background:rgba(36,18,24,.9);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:9px 11px;font-size:13.5px;resize:none;height:44px;font-family:inherit;min-width:0}
 .crow button{background:var(--red);border:none;color:#fff;border-radius:10px;padding:0 16px;font-weight:bold;font-size:15px}
+.attbtn{background:rgba(31,15,21,.85)!important;border:1px solid var(--line)!important;font-size:17px!important;padding:0 10px!important;opacity:.75;transition:opacity .2s}
+.attbtn.has-file{opacity:1;border-color:var(--teal)!important;box-shadow:0 0 8px rgba(100,170,178,.3)}
+#fileprev{width:100%;order:-1;display:none;align-items:center;gap:7px;background:rgba(100,170,178,.1);border:1px solid rgba(100,170,178,.35);border-radius:8px;padding:5px 10px;font-size:11.5px;color:var(--teal)}
+#fileprev span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fileprev button{background:none;border:none;color:var(--mut);font-size:14px;padding:0;cursor:pointer;flex:none;line-height:1}
 .keynote{font-size:11.5px;color:var(--sub);padding:0 12px 10px;line-height:1.5}
 .rdecor{position:fixed;left:0;right:0;bottom:0;height:48vh;z-index:1;pointer-events:none;opacity:.5}
 .rdecor svg{width:100%;height:100%;display:block}
@@ -363,7 +368,14 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 <div class="rchat" id="chatbox" style="display:none">
 <div class="msgs" id="msgs"></div>
 <div class="rstarts" id="rstarts"></div>
-<div class="crow"><textarea id="ci" placeholder="Schreib hier… (oder 🎤 diktieren)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea><button class="micb" data-f="ci" onclick="micToggle('ci')" title="Diktieren – sendet automatisch, wenn du aufhörst zu sprechen">🎤</button><button onclick="sendMsg()" title="Senden">➤</button></div>
+<div class="crow">
+  <input type="file" id="fileIn" accept="image/*,.pdf,.txt" style="display:none" onchange="fileChosen(this)">
+  <div id="fileprev"><span id="fpname"></span><button onclick="clearFile()" title="Entfernen">✕</button></div>
+  <textarea id="ci" placeholder="Schreib hier… (oder 🎤 diktieren)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+  <button class="micb" data-f="ci" onclick="micToggle('ci')" title="Diktieren – sendet automatisch, wenn du aufhörst zu sprechen">🎤</button>
+  <button class="attbtn" id="attbtn" onclick="document.getElementById('fileIn').click()" title="Datei anhängen">📎</button>
+  <button onclick="sendMsg()" title="Senden">➤</button>
+</div>
 <div class="keynote"></div>
 </div>
 
@@ -856,18 +868,49 @@ Kontext über Daniel: ${PROFILE}
 Aktiver Hut: ${HUTS[ST.hut].label} (${HUTS[ST.hut].sub})
 Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.${parts.includes("sophie")?famCtx():""}`}
 let BUSY=false;
-function sendMsg(){const i=document.getElementById("ci"),t=i.value.trim();if(!t)return;i.value="";sendText(t)}
-function sendText(t){if(BUSY||!CUR.key)return;
-stopSpeak();addMsg("u",t);maraWatch(t);
+let PENDFILE=null;
+function fileChosen(input){
+  const f=input.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const data=e.target.result.split(",")[1];
+    const mime=f.type||"application/octet-stream";
+    PENDFILE={name:f.name,data,mime};
+    document.getElementById("fpname").textContent="📎 "+f.name;
+    document.getElementById("fileprev").style.display="flex";
+    document.getElementById("attbtn").classList.add("has-file");
+  };
+  reader.readAsDataURL(f);
+  input.value="";
+}
+function clearFile(){
+  PENDFILE=null;
+  document.getElementById("fileprev").style.display="none";
+  document.getElementById("attbtn").classList.remove("has-file");
+}
+function sendMsg(){const i=document.getElementById("ci"),t=i.value.trim();if(!t&&!PENDFILE)return;i.value="";const file=PENDFILE;clearFile();sendText(t||"📎",file)}
+function sendText(t,file){if(BUSY||!CUR.key)return;
+stopSpeak();
+const disp=file?(t==="📎"?"📎 "+file.name:t+"\n📎 "+file.name):t;
+addMsg("u",disp);maraWatch(t);
 if(!ST.key){ephem("Ohne API-Key können die Charaktere hier nicht antworten – <a href='#' onclick='openSet();return false' style='color:#FF7088'>Einstellungen öffnen</a>.");return}
 BUSY=true;
 ephem(CUR.type==="meet"?"Die Runde berät…":fname(CH(CUR.id))+" denkt nach…","typ");
 const hist=(ST.chats[CUR.key]||[]).slice(-14).map(x=>({role:x.r==="u"?"user":"assistant",content:x.r==="m"?"[Einwurf von Mara Adler, Red Team, sie hat angeklopft]: "+x.t:x.t}));
 const msgs=[];hist.forEach(m=>{const l=msgs[msgs.length-1];if(l&&l.role===m.role)l.content+="\n\n"+m.content;else msgs.push({role:m.role,content:m.content})});
 while(msgs.length&&msgs[0].role!=="user")msgs.shift();
+// Letzten User-Eintrag ggf. mit Datei als Content-Array ersetzen
+if(file&&msgs.length&&msgs[msgs.length-1].role==="user"){
+  const textPart=t&&t!=="📎"?t:"Bitte diese Datei analysieren und kommentieren.";
+  const blocks=[];
+  if(file.mime.startsWith("image/")){blocks.push({type:"image",source:{type:"base64",media_type:file.mime,data:file.data}})}
+  else{blocks.push({type:"document",source:{type:"base64",media_type:file.mime,data:file.data}})}
+  blocks.push({type:"text",text:textPart});
+  msgs[msgs.length-1].content=blocks;
+}
 const mkSys=()=>CUR.type==="meet"?MEET_SYS(CUR.parts):SYS(CH(CUR.id));
 ((CUR.parts&&CUR.parts.includes("sophie"))?loadFamily().catch(()=>{}):Promise.resolve())
-.then(()=>callClaude(mkSys(),msgs,CUR.type==="meet"?1100:800))
+.then(()=>callClaude(mkSys(),msgs,CUR.type==="meet"?1100:1200))
 .then(txt=>{BUSY=false;unephem();
 let act=null;
 if(CUR.parts&&CUR.parts.includes("sophie")){const p=fsParse(txt);if(p){act=p.act;txt=p.clean}}
