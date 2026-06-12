@@ -1114,9 +1114,12 @@ function lkMsg(t,c){const m=document.getElementById("lkmsg");if(m){m.textContent
 async function syncFetchRaw(tmo){try{const c=new AbortController();const t=setTimeout(()=>c.abort(),tmo||4000);
  const r=await fetch(FS.url+"/rest/v1/dreos_sync?id=eq."+SYNCID+"&select=payload,updated_at",{headers:{apikey:FS.key,Authorization:"Bearer "+FS.key},signal:c.signal});clearTimeout(t);
  const rows=await r.json();return rows.length?rows[0].payload:null}catch(e){return null}}
-function mergeState(r){const lk=ST.key,lc=ST.chats||{};for(const k in r)ST[k]=r[k];
+function mergeState(r){const lk=ST.key,lc=ST.chats||{},lt=ST.todos,lf=ST.fokus;for(const k in r)ST[k]=r[k];
  if(lk&&!ST.key)ST.key=lk;ST.chats=ST.chats||{};
- for(const c in lc){const rc=ST.chats[c];if(!rc||lc[c].length>rc.length)ST.chats[c]=lc[c]}}
+ for(const c in lc){const rc=ST.chats[c];if(!rc||lc[c].length>rc.length)ST.chats[c]=lc[c]}
+ const tn=t=>t&&t.lists?t.lists.reduce((s,l)=>s+(l.items||[]).length,0):0;
+ if(tn(ST.todos)===0&&tn(lt)>0)ST.todos=lt;
+ if(lf&&lf.length&&(!ST.fokus||!ST.fokus.length))ST.fokus=lf}
 async function syncPull(tmo){if(!KEY)return false;const p=await syncFetchRaw(tmo);if(!p)return false;
  let remote;try{remote=JSON.parse(await aesDec(KEY,p))}catch(e){return false}
  if((remote._ts||0)>(ST._ts||0)){mergeState(remote);localStorage.setItem("dreos2",JSON.stringify(ST));SYNCAT=Date.now();return true}
