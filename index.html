@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DREOS">
@@ -203,8 +204,9 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 .crow{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border-top:1px solid var(--line);margin-top:8px}
 .crow textarea{flex:1;background:rgba(36,18,24,.9);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:9px 11px;font-size:13.5px;resize:none;height:44px;font-family:inherit;min-width:0}
 .crow button{background:var(--red);border:none;color:#fff;border-radius:10px;padding:0 16px;font-weight:bold;font-size:15px}
-.attbtn{background:rgba(31,15,21,.85)!important;border:1px solid var(--line)!important;font-size:17px!important;padding:0 10px!important;opacity:.75;transition:opacity .2s}
-.attbtn.has-file{opacity:1;border-color:var(--teal)!important;box-shadow:0 0 8px rgba(100,170,178,.3)}
+.attbtn{background:rgba(100,170,178,.15)!important;border:1px solid rgba(100,170,178,.5)!important;font-size:17px!important;padding:0 11px!important;opacity:.9;transition:all .2s;color:#fff!important}
+.attbtn:hover{background:rgba(100,170,178,.28)!important;opacity:1}
+.attbtn.has-file{opacity:1;background:rgba(100,170,178,.3)!important;border-color:var(--teal)!important;box-shadow:0 0 8px rgba(100,170,178,.4)}
 #fileprev{width:100%;order:-1;display:none;align-items:center;gap:7px;background:rgba(100,170,178,.1);border:1px solid rgba(100,170,178,.35);border-radius:8px;padding:5px 10px;font-size:11.5px;color:var(--teal)}
 #fileprev span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #fileprev button{background:none;border:none;color:var(--mut);font-size:14px;padding:0;cursor:pointer;flex:none;line-height:1}
