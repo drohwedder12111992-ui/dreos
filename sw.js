@@ -1,7 +1,8 @@
 /* DREOS Office – Service Worker (Offline-Shell) */
-const CACHE = "dreos-v2";
+const CACHE = "dreos-v3";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
+  "./icons/eos-logo.svg", "./icons/eos-logo-white.svg",
   "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png",
   "./Avatare/sophie.jpg", "./Avatare/vera.jpg", "./Avatare/henrik.jpg",
   "./Avatare/ingrid.jpg", "./Avatare/samuel.jpg", "./Avatare/carla.jpg",

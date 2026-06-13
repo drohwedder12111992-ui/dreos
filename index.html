@@ -325,15 +325,118 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
  .btn{min-height:38px}
  .rtop{padding-top:calc(6px + env(safe-area-inset-top))}
 }
+
+/* ============================================================
+   REDESIGN · STUFE 1 · „THE EXECUTIVE FLOOR"
+   Material-Palette · SF-Typografie · eOs-Logo · Navigation
+   ============================================================ */
+:root{
+  --obsidian:#06040a; --surface-solid:#0c0810;
+  --brass:#C9A45C; --brass-2:#E6D2A0; --brass-line:rgba(201,164,92,.32);
+  --hair:rgba(255,255,255,.08);
+  --ease:cubic-bezier(.32,.72,0,1);
+  --nav-h:64px;
+}
+body{
+  font-family:-apple-system,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  letter-spacing:-.01em;background:#04030a;
+}
+h1,h2,.rcard .quote{letter-spacing:-.02em}
+/* --- eOs-Wortmarke (offiziell) --- */
+#lobby .logo{font-size:0;letter-spacing:0}
+#lobby .logo img{height:64px;width:auto;display:block;filter:drop-shadow(0 8px 30px rgba(234,0,41,.34))}
+#lobby .l2{margin-top:16px}
+.lklogo{font-size:0!important}
+.lklogo img{height:42px;width:auto;filter:drop-shadow(0 5px 20px rgba(234,0,41,.3))}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .eoslogo{height:25px;width:auto;display:block}
+.brand .pname{font-weight:600;font-size:13px;letter-spacing:.16em;color:var(--brass-2);text-transform:uppercase}
+/* --- Kopfzeile schlank --- */
+header{gap:12px;flex-wrap:nowrap!important;padding:11px 18px;padding-top:calc(11px + env(safe-area-inset-top));
+  background:linear-gradient(180deg,rgba(6,4,10,.92),rgba(6,4,10,.5));border-bottom:1px solid var(--hair)}
+.huts{margin-left:auto;border-color:var(--brass-line)}
+.huts button.on{background:var(--red)}
+#clock{min-width:auto;font-size:11.5px;font-variant-numeric:tabular-nums;letter-spacing:0}
+#spkb,#lapseb{display:none}
+@media(max-width:540px){ header{row-gap:0} .brand .pname{display:none} .huts button{padding:7px 11px;font-size:11.5px} }
+/* --- Bottom Command Bar --- */
+#cmdbar{position:fixed;left:0;right:0;bottom:0;z-index:45;display:none;
+  grid-template-columns:repeat(5,1fr);align-items:stretch;
+  padding:7px 8px calc(7px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(10,7,14,.72),rgba(6,4,9,.94));
+  -webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);
+  border-top:1px solid var(--brass-line);box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+#cmdbar.show{display:grid}
+.cmd{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  background:none;border:none;color:var(--mut);font-size:10px;letter-spacing:.01em;font-family:inherit;
+  min-height:50px;border-radius:14px;transition:color .25s,transform .12s,background .25s;-webkit-tap-highlight-color:transparent}
+.cmd svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.cmd.on{color:var(--brass-2)}
+.cmd:active{transform:scale(.9);background:rgba(255,255,255,.05)}
+.cmd .dot{position:absolute;top:6px;left:calc(50% + 9px);width:7px;height:7px;border-radius:50%;background:var(--red);display:none}
+#hub.view{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 10px)}
+#hubfoot,#todoTab{display:none}
+/* --- Bottom-Sheets („Mehr" + To-dos) --- */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:70;transform:translateY(101%);
+  transition:transform .4s var(--ease);background:var(--surface-solid);
+  border-top:1px solid var(--brass-line);border-radius:22px 22px 0 0;
+  box-shadow:0 -24px 70px rgba(0,0,0,.6);padding:10px 16px calc(20px + env(safe-area-inset-bottom));max-height:84vh;overflow:auto}
+.sheet.open{transform:none}
+.sheet .grip{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);margin:4px auto 16px}
+.sheet h3{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--brass);margin:0 4px 12px}
+.sheet-back{position:fixed;inset:0;z-index:69;background:rgba(4,2,8,.5);opacity:0;pointer-events:none;transition:opacity .35s}
+.sheet-back.open{opacity:1;pointer-events:auto}
+.moregrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.morebtn{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--hair);
+  border-radius:15px;padding:14px;color:var(--txt);font-size:13.5px;font-family:inherit;text-align:left;
+  transition:transform .12s,border-color .2s;-webkit-tap-highlight-color:transparent}
+.morebtn:active{transform:scale(.97);border-color:var(--brass-line)}
+.morebtn svg{width:22px;height:22px;stroke:var(--brass);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+/* To-do-Panel → Bottom-Sheet (mobil) */
+@media(max-width:680px){
+ #todoPanel{top:auto;left:0;right:0;bottom:0;width:100%;max-height:86vh;height:auto;
+   border-left:none;border-top:1px solid var(--brass-line);border-radius:22px 22px 0 0;
+   transform:translateY(101%);transition:transform .42s var(--ease)}
+ #todoPanel.open{transform:none}
+ #todoPanel::after{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.22)}
+ .tdhead{padding-top:18px}
+}
+/* --- Türen & Material: Messing statt Gold/Teal-Mix --- */
+.door:active .dbody{transform:scale(.97)}
+.plate{color:var(--brass);border-color:var(--brass-line);font-weight:600}
+.dhandle{background:linear-gradient(180deg,var(--brass-2),var(--brass));opacity:.9}
+.counter,.rcard,.rchat{border-color:var(--hair);box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.counter{border-color:var(--brass-line)}
+/* --- Touch-Feedback; Hover nur auf echten Pointern --- */
+.btn,.back,.endsess{transition:transform .12s,border-color .2s,color .2s,background .2s}
+.btn:active,.back:active,.endsess:active,.rstarts button:active,.morebtn:active,.sescard:active{transform:scale(.96)}
+@media(hover:none){
+ .btn:hover,.back:hover,#hubfoot button:hover,.door:hover .dbody,.rstarts button:hover{border-color:var(--line);color:inherit;box-shadow:0 14px 30px rgba(0,0,0,.45);transform:none}
+ .door:hover .dbody{transform:none}
+}
+/* --- Szene: Luxus-Politur (blaue Stunde) --- */
+#floor{background:linear-gradient(180deg,#0d0a16,#070510 55%,#04030a)}
+#floor::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;background:
+  radial-gradient(120% 80% at 50% -8%,rgba(201,164,92,.10),transparent 60%),
+  radial-gradient(60% 50% at 50% 0%,rgba(234,0,41,.08),transparent 70%)}
+#vig{background:radial-gradient(ellipse at 50% 38%,transparent 46%,rgba(0,0,0,.72) 100%)}
+#scene::after{content:"";position:absolute;inset:0;z-index:7;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+/* --- Reduced Motion --- */
+@media(prefers-reduced-motion:reduce){
+ *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.08s!important}
+ .view.on{animation:none}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
-<div id="lock"><div class="lkbox"><div class="lklogo">DREOS</div><div class="lksub">Executive Office · privat</div><input type="password" id="lkpass" placeholder="Passphrase" autocomplete="current-password" onkeydown="if(event.key==='Enter')unlock()"><label class="lkrem"><input type="checkbox" id="lkrem" checked> Auf diesem Gerät angemeldet bleiben</label><button id="lkbtn" onclick="unlock()">Entsperren</button><div id="lkmsg"></div></div></div>
+<div id="lock"><div class="lkbox"><div class="lklogo"><img src="icons/eos-logo.svg" alt="eos"></div><div class="lksub">Executive Office · privat</div><input type="password" id="lkpass" placeholder="Passphrase" autocomplete="current-password" onkeydown="if(event.key==='Enter')unlock()"><label class="lkrem"><input type="checkbox" id="lkrem" checked> Auf diesem Gerät angemeldet bleiben</label><button id="lkbtn" onclick="unlock()">Entsperren</button><div id="lkmsg"></div></div></div>
 <div id="lobby">
 <div class="door dl"></div><div class="door dr"></div>
-<div class="logo">eos</div>
+<div class="logo"><img src="icons/eos-logo.svg" alt="eos"></div>
 <div class="l2">DREOS · Virtual Office</div>
 <div class="greet" id="lgreet"></div>
 <div class="date" id="ldate"></div>
@@ -349,7 +452,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 </div>
 
 <header>
-<div class="brand">eos<small>DREOS Virtual Office</small></div>
+<div class="brand"><img class="eoslogo" src="icons/eos-logo.svg" alt="eos"><span class="pname">DREOS</span></div>
 <div class="huts">
 <button id="hutDID" onclick="setHut('DID')">DID · Director Ops</button>
 <button id="hutFS" onclick="setHut('FS')">FS · Geschäftsführer</button>
@@ -410,6 +513,30 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px
 
 <div id="ovl" onclick="if(event.target===this)closeOvl()"><div class="panel" id="panel"></div></div>
 <div id="toast"></div>
+
+<!-- ====== Bottom Command Bar · Stufe 1 ====== -->
+<nav id="cmdbar">
+  <button class="cmd" data-nav="hub" onclick="navGo('hub')"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>Empfang</button>
+  <button class="cmd" data-nav="rooms" onclick="navGo('rooms')"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="7" height="18" rx="1"/><rect x="13" y="3" width="7" height="18" rx="1"/><path d="M9 12h.01M18 12h.01"/></svg>Räume</button>
+  <button class="cmd" data-nav="board" onclick="navGo('board')"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="13" rx="8" ry="3.2"/><circle cx="12" cy="5" r="1.7"/><circle cx="4.5" cy="11" r="1.7"/><circle cx="19.5" cy="11" r="1.7"/></svg>Boardroom</button>
+  <button class="cmd" data-nav="todos" onclick="navGo('todos')"><svg viewBox="0 0 24 24"><path d="M4 6.5 6 8.5 9.5 5"/><path d="M4 13.5 6 15.5 9.5 12"/><path d="M13 7h7M13 14h7"/></svg><span class="dot" id="cmdTodoDot"></span>To-dos</button>
+  <button class="cmd" data-nav="more" onclick="navGo('more')"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>Mehr</button>
+</nav>
+<div class="sheet-back" id="sheetBack" onclick="closeMore()"></div>
+<div class="sheet" id="moreSheet">
+  <div class="grip"></div>
+  <h3>Werkzeuge &amp; Räume</h3>
+  <div class="moregrid">
+    <button class="morebtn" onclick="closeMore();openChats()"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 3z"/></svg>Gespräche</button>
+    <button class="morebtn" onclick="closeMore();openRadar()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 12 16.5 7.5"/></svg>Muster-Radar</button>
+    <button class="morebtn" onclick="closeMore();openGov()"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v6l9 4 9-4V7"/></svg>Governance</button>
+    <button class="morebtn" onclick="closeMore();openFok()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>Fokusthemen</button>
+    <button class="morebtn" onclick="closeMore();openSet()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Einstellungen</button>
+    <button class="morebtn" onclick="closeMore();openInfo()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>Info</button>
+    <button class="morebtn" id="moreLapse" onclick="toggleLapse()"><svg viewBox="0 0 24 24"><path d="M4 5l8 7-8 7zM13 5l8 7-8 7z"/></svg>Zeitraffer</button>
+    <button class="morebtn" id="moreSpk" onclick="voiceToggle()"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>Vorlesen</button>
+  </div>
+</div>
 
 <button id="todoTab" onclick="todoToggle()" title="To-do-Listen ein-/ausblenden">TO-DOS<span class="cnt" id="todoCnt">0</span></button>
 <div id="todoPanel">
@@ -757,7 +884,7 @@ return [1,2,3].map(k=>a[k].map((v,j)=>Math.round(v+(b[k][j]-v)*f)).join(","))}
 function nF(t){if(t<5||t>=21)return 1;if(t<7.5)return 1-(t-5)/2.5;if(t<18.5)return 0;return (t-18.5)/2.5}
 let LAPSE=false,simT=0;
 function curT(){const d=new Date();return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600}
-function T(){return LAPSE?simT:curT()}
+function T(){return LAPSE?simT:19.55}/* Ruhezustand: blaue Stunde */
 function phaseLabel(t){if(t<5)return "Die Stadt schläft nie ganz.";if(t<7.5)return "Sonnenaufgang über der Stadt.";if(t<11)return "Die Stadt ist wach.";if(t<17)return "Voller Betrieb da draußen.";if(t<19.5)return "Abendlicht über der Skyline.";if(t<21.5)return "Die Stadt schaltet die Lichter an.";return "Die Stadt leuchtet."}
 function updateSky(){const t=T();
 const c=skyCols(t);
@@ -1356,6 +1483,36 @@ document.addEventListener("visibilitychange",async()=>{if(document.visibilitySta
    if(await lockOk(k)){KEY=k;await startAfterUnlock();return}
    localStorage.removeItem("dreosKraw")}}catch(e){}
  setTimeout(()=>{const i=document.getElementById("lkpass");if(i)i.focus()},400)})();
+
+/* ============================================================
+   STUFE 1 · Navigation · Bottom-Sheets · Wisch-zurück
+   ============================================================ */
+function setNav(name){document.querySelectorAll("#cmdbar .cmd").forEach(b=>b.classList.toggle("on",b.dataset.nav===name))}
+function openMore(){document.getElementById("moreSheet").classList.add("open");document.getElementById("sheetBack").classList.add("open")}
+function closeMore(){document.getElementById("moreSheet").classList.remove("open");document.getElementById("sheetBack").classList.remove("open")}
+function navGo(t){
+  if(t==="more"){openMore();return}
+  if(t==="todos"){if(typeof todoToggle==="function")todoToggle(true);setNav("todos");return}
+  if(t==="board"){if(typeof boardSetup==="function")boardSetup();return}
+  if(t==="rooms"){show("hub");const d=document.getElementById("doors");if(d)d.scrollIntoView({behavior:"smooth",block:"start"});setNav("rooms");return}
+  show("hub");window.scrollTo({top:0,behavior:"smooth"});setNav("hub");
+}
+/* Command-Bar nur im Hub einblenden + aktiven Zustand pflegen */
+(function(){var _s=show;show=function(v){_s(v);var bar=document.getElementById("cmdbar");if(bar)bar.classList.toggle("show",v==="hub");if(v==="hub")setNav("hub")}})();
+/* roter Punkt auf „To-dos", wenn offene Aufgaben da sind */
+(function(){if(typeof todoRender!=="function")return;var _tr=todoRender;todoRender=function(){var r=_tr.apply(this,arguments);try{var n=ST.todos.lists.reduce(function(s,l){return s+l.items.filter(function(i){return !i.done}).length},0);var d=document.getElementById("cmdTodoDot");if(d)d.style.display=n>0?"block":"none"}catch(e){}return r}})();
+/* Wisch von links = zurück / Sheet schließen */
+(function(){var sx=0,sy=0,act=false;
+ document.addEventListener("touchstart",function(e){var x=e.touches[0].clientX;if(x<28){act=true;sx=x;sy=e.touches[0].clientY}else act=false},{passive:true});
+ document.addEventListener("touchend",function(e){if(!act)return;act=false;var dx=e.changedTouches[0].clientX-sx,dy=Math.abs(e.changedTouches[0].clientY-sy);
+   if(dx>64&&dy<60){
+     if(document.getElementById("moreSheet").classList.contains("open")){closeMore();return}
+     if(document.getElementById("todoPanel").classList.contains("open")){todoToggle(false);return}
+     if(document.getElementById("ovl").classList.contains("show")){closeOvl();return}
+     var room=document.getElementById("room"),meet=document.getElementById("meet");
+     if((room&&room.classList.contains("on"))||(meet&&meet.classList.contains("on"))){leaveRoom()}
+   }},{passive:true});
+})();
 </script>
 </body>
 </html>
