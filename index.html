@@ -1111,17 +1111,22 @@ if(r==="u")updateSessionLast(CUR.key,t);
 save();renderChat()}
 function ephem(t,id){const m=document.getElementById("msgs");m.insertAdjacentHTML("beforeend",`<div class="m t"${id?` id="${id}"`:""}>${t}</div>`);m.scrollTop=m.scrollHeight}
 function unephem(){const e=document.getElementById("typ");if(e)e.remove()}
-function callClaude(system,messages,maxTok,model){
-return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":ST.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:model||ST.model,max_tokens:maxTok||800,system,messages})})
-.then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j.error&&j.error.message)||"HTTP "+r.status);return (j.content||[]).map(b=>b.text||"").join("")})}
+function callClaude(system,messages,maxTok,model,tools){
+var _body={model:model||ST.model,max_tokens:maxTok||800,system,messages};if(tools)_body.tools=tools;
+return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":ST.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(_body)})
+.then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j.error&&j.error.message)||"HTTP "+r.status);
+const blocks=j.content||[];let text=blocks.map(b=>b.text||"").join("");
+const srcs=[];blocks.forEach(b=>{(b.citations||[]).forEach(c=>{if(c.url&&!srcs.some(s=>s.url===c.url))srcs.push({url:c.url,title:c.title||c.url})})});
+if(srcs.length)text+="\n\nQuellen:\n"+srcs.slice(0,6).map(s=>"• "+s.title+" – "+s.url).join("\n");
+return text})}
 function errMsg(e){return /401|invalid x-api-key|authentication/i.test(e.message)?"API-Key ungültig – bitte in den Einstellungen prüfen.":/Failed to fetch|load/i.test(e.message)?"Keine Verbindung zur Claude API (Internet/Blocker prüfen).":e.message.replace(/</g,"&lt;")}
 function SYS(c){const lv=rlev(),rad=lv.some(x=>x>0)?` Heutiges Muster-Radar (0–3): ${RADAR.map((r,i)=>r+": "+lv[i]).join(", ")}.`:"";
 let extra="";
 if(c.id==="mara")extra=" Eröffne grundsätzlich mit der Gegenposition und benenne unbelegte Annahmen schonungslos.";
-if(c.id==="sophie")extra=" Du denkst beruflich UND privat: Termine, Energie, Familie, Erholung. Schütze Daniel aktiv vor Überlastung und sprich Grenzen offen an. Du hast direkten Zugriff auf ROH, die FamilySync-App von Daniel und seiner Frau Kim (Hund: Emma). Nutze die Live-Daten unten aktiv: weise auf Kollisionen zwischen Beruflichem und Privatem hin, denke an Emma-Tage, Geburtstage und gemeinsame Termine."+famCtx()+fsRules();
+if(c.id==="sophie")extra=" Du denkst beruflich UND privat: Termine, Energie, Familie, Erholung. Schütze Daniel aktiv vor Überlastung und sprich Grenzen offen an. Du hast direkten Zugriff auf ROH, die FamilySync-App von Daniel und seiner Frau Kim (Hund: Emma). Nutze die Live-Daten unten aktiv: weise auf Kollisionen zwischen Beruflichem und Privatem hin, denke an Emma-Tage, Geburtstage und gemeinsame Termine. Du hast außerdem Web-Zugang: Bei allem Aktuellen oder Veränderlichen – Wetter, Nachrichten und Weltgeschehen, TV-Programm, Sport, Preise, Öffnungszeiten, Fakten zu Personen oder Produkten – suchst du eigenständig im Web und antwortest mit aktuellem Stand samt kurzer Quellenangabe. Bei zeitlosem Wissen oder Smalltalk antwortest du direkt ohne Suche."+famCtx()+fsRules();
 return `Du bist ${c.name}, ${c.role} in DREOS, dem persönlichen Executive Operating System von Daniel Rohwedder. Ihr sitzt in deinem Büro im virtuellen DREOS-Office. Persönlichkeit: ${c.persona} Deine Leitfragen: ${c.fragen.join(" | ")}.${extra}
 Antworte IMMER in dieser Rolle, auf Deutsch, per Du, direkt und prägnant (meist unter 150 Wörtern), in Fließtext ohne Listen, wie in einem echten Gespräch unter Vertrauten. Fordere Daniel heraus, statt ihm zu gefallen. Stelle höchstens eine Rückfrage pro Antwort. Wenn im Verlauf ein Einwurf von Mara Adler auftaucht, beziehe dich darauf, wo es hilft.
-Bleib strikt in deiner Expertise: Liegt Daniels Anliegen erkennbar (auch teilweise) außerhalb oder quer zu deinem Fachgebiet, sag das offen und empfiehl NAMENTLICH, welche Kolleg:innen er dazuholen sollte (1:1 oder als Meeting im Meetingroom) und warum – statt fachfremd mitzureden.
+Bleib strikt in deiner Expertise: Liegt Daniels Anliegen erkennbar (auch teilweise) außerhalb oder quer zu deinem Fachgebiet, sag das offen und empfiehl NAMENTLICH, welche Kolleg:innen er dazuholen sollte (1:1 oder als Meeting im Meetingroom) und warum – statt fachfremd mitzureden. Du kannst bei Bedarf das Web durchsuchen, um aktuelle Fakten, Zahlen, Nachrichten oder Entwicklungen aus deinem Fachgebiet zu prüfen – nutze es, wenn es deine Antwort belegt, und nenne kurz die Quelle; bei zeitlosem Wissen antworte direkt.
 Kontext über Daniel: ${PROFILE}
 Aktiver Hut: ${HUTS[ST.hut].label} (${HUTS[ST.hut].sub})${rad}
 Aktuelle Fokusthemen: ${ST.fokus.join("; ")}.`}
@@ -1134,7 +1139,7 @@ function meetMode(){return ST.modes&&MODES[ST.modes[CUR.key]]?ST.modes[CUR.key]:
 function MEET_SYS(parts){const ps=parts.map(id=>{const c=CH(id);return `${fname(c)} (${c.name}, ${c.role}): ${c.persona} Leitfragen: ${c.fragen.join(" | ")}`}).join("\n");
 return `Du simulierst ein Meeting im Meetingroom von DREOS, dem persönlichen Executive Operating System von Daniel Rohwedder. Am Tisch sitzen:
 ${ps}
-Daniel bringt sein Anliegen ein. Antworte als echte Gesprächsrunde: 2 bis ${Math.min(4,parts.length+1)} Wortmeldungen pro Antwort. JEDE Wortmeldung beginnt in einer neuen Zeile exakt mit dem Vornamen und Doppelpunkt (Beispiel: "${fname(CH(parts[0]))}: …"). Maximal 70 Wörter pro Wortmeldung, sofern das Zusammenarbeitsmodell nichts anderes sagt. Die Charaktere bleiben strikt in ihrer Persönlichkeit, bauen aufeinander auf und widersprechen sich, wenn es der Sache dient.${parts.includes("mara")?" Mara eröffnet oder beendet mit der Gegenposition.":""} Kein Text außerhalb dieses Formats. Auf Deutsch, per Du, direkt, ohne Listen und ohne unnötiges Lob.
+Daniel bringt sein Anliegen ein. Antworte als echte Gesprächsrunde: 2 bis ${Math.min(4,parts.length+1)} Wortmeldungen pro Antwort. JEDE Wortmeldung beginnt in einer neuen Zeile exakt mit dem Vornamen und Doppelpunkt (Beispiel: "${fname(CH(parts[0]))}: …"). Maximal 70 Wörter pro Wortmeldung, sofern das Zusammenarbeitsmodell nichts anderes sagt. Die Charaktere bleiben strikt in ihrer Persönlichkeit, bauen aufeinander auf und widersprechen sich, wenn es der Sache dient.${parts.includes("mara")?" Mara eröffnet oder beendet mit der Gegenposition.":""} Kein Text außerhalb dieses Formats. Auf Deutsch, per Du, direkt, ohne Listen und ohne unnötiges Lob. Ihr könnt bei Bedarf das Web durchsuchen, um aktuelle Fakten oder Entwicklungen zu prüfen, und nennt dann kurz die Quelle.
 ${MODES[meetMode()].rules}
 Passt Daniels Anliegen erkennbar nicht mehr zum Zusammenarbeitsmodell (z. B. er will plötzlich entscheiden statt diskutieren), benennt das kurz und arbeitet im passenden Format weiter. Fehlt am Tisch eine entscheidende Expertise, sagt das offen und empfehlt namentlich, wen Daniel dazuholen sollte.
 Kontext über Daniel: ${PROFILE}
@@ -1228,7 +1233,7 @@ const mkSys=()=>(CUR.type==="meet"?MEET_SYS(CUR.parts):SYS(CH(CUR.id)))+docsCtx(
 const nDocs=(ST.docs[CUR.key]||[]).length;
 const big=nDocs>0||(CUR.type==="meet"&&["abgleich","entscheidung"].includes(meetMode()));
 ((CUR.parts&&CUR.parts.includes("sophie"))?loadFamily().catch(()=>{}):Promise.resolve())
-.then(()=>callClaude(mkSys(),msgs,CUR.type==="meet"?(big?3600:1100):(big?2600:1200)))
+.then(()=>{var _tools=[{type:"web_search_20250305",name:"web_search",max_uses:5,user_location:{type:"approximate",country:"DE",timezone:"Europe/Berlin"}}];return callClaude(mkSys(),msgs,CUR.type==="meet"?(big?3600:1100):(big?2600:1200),null,_tools)})
 .then(txt=>{BUSY=false;unephem();
 let act=null;
 if(CUR.parts&&CUR.parts.includes("sophie")){const p=fsParse(txt);if(p){act=p.act;txt=p.clean}}
