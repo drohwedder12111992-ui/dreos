@@ -798,6 +798,7 @@ SCHREIBZUGRIFF AUF ROH: Wenn Daniel dich bittet, etwas in der Familien-App einzu
 @@FS{"op":"dog","date":"JJJJ-MM-TT","morning":"daniel|kim|null","evening":"daniel|kim|null"}@@
 @@FS{"op":"birthday","name":"…","date":"JJJJ-MM-TT"}@@
 @@FS{"op":"vacation","name":"…","start_date":"JJJJ-MM-TT","end_date":"JJJJ-MM-TT","members":["daniel","kim"]}@@
+@@FS{"op":"shopping","items":["Milch","Brot"]}@@  (setzt einen oder mehrere Artikel auf die gemeinsame Einkaufsliste)
 Regeln: Heute ist ${today()}. Fehlen Datum oder Details, frage nach statt zu raten. Daniel bestätigt jede Aktion per Klick, bevor sie wirklich eingetragen wird – kündige das kurz an. Einträge für Kim nur, wenn Daniel es ausdrücklich verlangt.`}
 function fsDescribe(a){
  if(a.op==="status")return (a.member==="kim"?"Kim":"Daniel")+" ist am "+fsFmt(a.date)+" "+(FSTAT[a.status]||a.status)+(a.note?" – Notiz: "+a.note:"");
@@ -805,10 +806,28 @@ function fsDescribe(a){
  if(a.op==="dog")return "Emma am "+fsFmt(a.date)+": morgens "+(a.morning||"offen")+", abends "+(a.evening||"offen");
  if(a.op==="birthday")return "Geburtstag: "+a.name+" am "+a.date;
  if(a.op==="vacation")return "Urlaubsvorschlag „"+a.name+"“ "+fsFmt(a.start_date)+"–"+fsFmt(a.end_date)+" für "+((a.members||[]).join(" + "));
+ if(a.op==="shopping"){const its=(a.items&&a.items.length?a.items:(a.item?[a.item]:[]));return "Auf die Einkaufsliste: "+its.join(", ")}
  return JSON.stringify(a)}
 function fsParse(t){const m=String(t).match(/@@FS(\{[\s\S]*?\})@@/);if(!m)return null;
  try{const a=JSON.parse(m[1]);if(!a.op)return null;return{act:a,clean:String(t).replace(/@@FS\{[\s\S]*?\}@@/g,"").trim()}}catch(e){return null}}
 async function fsLog(msg){try{await fsApi("activity_log",{method:"POST",body:JSON.stringify({household_id:FS.hh,member_id:FS.daniel,message:msg+" <em>(via DREOS)</em>"})})}catch(e){}}
+async function fsDiscoverShop(){
+ if(typeof FS.shop!=="undefined")return FS.shop;
+ try{
+  const r=await fetch(FS.url+"/rest/v1/",{headers:{apikey:FS.key,Authorization:"Bearer "+FS.key}});
+  const spec=await r.json();const defs=spec.definitions||(spec.components&&spec.components.schemas)||{};
+  const cand=Object.keys(defs).find(function(n){return /shop|einkauf|grocer|cart/i.test(n)});
+  if(!cand){FS.shop=false;return false}
+  const props=defs[cand].properties||{},cols=Object.keys(props);
+  const pick=function(re){return cols.find(function(c){return re.test(c)})};
+  FS.shop={table:cand,
+   nameCol:pick(/^(name|item|title|text|product|article|bezeichnung|artikel)$/i)||pick(/(name|item|title|text|product|artikel)/i)||"name",
+   doneCol:pick(/^(done|checked|completed|bought|erledigt|gekauft|is_done|is_checked)$/i)||pick(/(done|check|complete|bought|erledigt|gekauft)/i),
+   hhCol:pick(/household/i),
+   memberCol:pick(/^(member_id|user_id|created_by|added_by|added_by_id|created_by_id)$/i)||pick(/(member_id|user_id|created_by|added_by)/i),
+   tsCol:pick(/(created_at|inserted_at|added_at)/i)};
+  return FS.shop;
+ }catch(e){FS.shop=false;return false}}
 async function fsExec(a){
  try{
   const now=new Date().toISOString();
@@ -836,6 +855,16 @@ async function fsExec(a){
    const r=await fsApi("vacation_proposals",{method:"POST",body:JSON.stringify({household_id:FS.hh,name:a.name,start_date:a.start_date,end_date:a.end_date,proposed_by_id:FS.daniel,confirmed_by_ids:solo?mids:[FS.daniel],member_ids:mids,status:solo?"confirmed":"proposal",updated_at:now})});
    if(!r.ok)throw new Error("HTTP "+r.status);
    await fsLog(solo?`<strong>Daniel</strong> Urlaub: <strong>${a.name}</strong> (${fsFmt(a.start_date)} – ${fsFmt(a.end_date)})`:`<strong>Daniel</strong> schlägt Urlaub vor: <strong>${a.name}</strong>`)}
+  else if(a.op==="shopping"){const info=await fsDiscoverShop();
+   if(!info)throw new Error("Einkaufslisten-Tabelle in ROH nicht gefunden – bitte Tabellennamen nennen");
+   const items=(a.items&&a.items.length?a.items:(a.item?[a.item]:[])).map(function(x){return String(x).trim()}).filter(Boolean);
+   if(!items.length)throw new Error("Keine Artikel angegeben");
+   for(let idx=0;idx<items.length;idx++){const row={};row[info.nameCol]=items[idx];
+    if(info.hhCol)row[info.hhCol]=FS.hh;if(info.doneCol)row[info.doneCol]=false;
+    if(info.memberCol)row[info.memberCol]=FS.daniel;if(info.tsCol)row[info.tsCol]=now;
+    const rr=await fsApi(info.table,{method:"POST",body:JSON.stringify(row)});
+    if(!rr.ok)throw new Error("HTTP "+rr.status+" ("+info.table+")")}
+   await fsLog("<strong>Daniel</strong> hat auf die Einkaufsliste gesetzt: <strong>"+items.join(", ")+"</strong>")}
   else throw new Error("Unbekannte Aktion: "+a.op);
   await loadFamily(true);
   return{ok:true}
