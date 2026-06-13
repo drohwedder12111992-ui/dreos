@@ -811,23 +811,48 @@ function fsDescribe(a){
 function fsParse(t){const m=String(t).match(/@@FS(\{[\s\S]*?\})@@/);if(!m)return null;
  try{const a=JSON.parse(m[1]);if(!a.op)return null;return{act:a,clean:String(t).replace(/@@FS\{[\s\S]*?\}@@/g,"").trim()}}catch(e){return null}}
 async function fsLog(msg){try{await fsApi("activity_log",{method:"POST",body:JSON.stringify({household_id:FS.hh,member_id:FS.daniel,message:msg+" <em>(via DREOS)</em>"})})}catch(e){}}
+function _fsShopInfo(defs,name){const props=defs[name].properties||{},cols=Object.keys(props);
+ const pick=function(re){return cols.find(function(c){return re.test(c)})};
+ return {table:name,cols:cols,
+  nameCol:pick(/^(name|item|title|text|product|article|bezeichnung|artikel)$/i)||pick(/(name|item|title|text|product|artikel)/i)||"name",
+  doneCol:pick(/^(done|checked|completed|bought|erledigt|gekauft|is_done|is_checked)$/i)||pick(/(done|check|complete|bought|erledigt|gekauft)/i),
+  hhCol:pick(/household/i),
+  memberCol:pick(/^(member_id|user_id|created_by|added_by|added_by_id|created_by_id)$/i)||pick(/(member_id|user_id|created_by|added_by)/i),
+  tsCol:pick(/(created_at|inserted_at|added_at)/i)}}
 async function fsDiscoverShop(){
  if(typeof FS.shop!=="undefined")return FS.shop;
  try{
   const r=await fetch(FS.url+"/rest/v1/",{headers:{apikey:FS.key,Authorization:"Bearer "+FS.key}});
   const spec=await r.json();const defs=spec.definitions||(spec.components&&spec.components.schemas)||{};
-  const cand=Object.keys(defs).find(function(n){return /shop|einkauf|grocer|cart/i.test(n)});
-  if(!cand){FS.shop=false;return false}
-  const props=defs[cand].properties||{},cols=Object.keys(props);
-  const pick=function(re){return cols.find(function(c){return re.test(c)})};
-  FS.shop={table:cand,
-   nameCol:pick(/^(name|item|title|text|product|article|bezeichnung|artikel)$/i)||pick(/(name|item|title|text|product|artikel)/i)||"name",
-   doneCol:pick(/^(done|checked|completed|bought|erledigt|gekauft|is_done|is_checked)$/i)||pick(/(done|check|complete|bought|erledigt|gekauft)/i),
-   hhCol:pick(/household/i),
-   memberCol:pick(/^(member_id|user_id|created_by|added_by|added_by_id|created_by_id)$/i)||pick(/(member_id|user_id|created_by|added_by)/i),
-   tsCol:pick(/(created_at|inserted_at|added_at)/i)};
-  return FS.shop;
+  const cands=Object.keys(defs).filter(function(n){return /shop|einkauf|grocer|cart/i.test(n)});
+  if(!cands.length){FS.shop=false;return false}
+  let best=null,bestScore=-1;
+  for(let i=0;i<cands.length;i++){const info=_fsShopInfo(defs,cands[i]);let n=0;
+   try{let q="/rest/v1/"+info.table+"?select=*&limit=1";if(info.hhCol)q+="&"+info.hhCol+"=eq."+FS.hh;
+    const gr=await fetch(FS.url+q,{headers:{apikey:FS.key,Authorization:"Bearer "+FS.key}});
+    const rows=await gr.json();n=Array.isArray(rows)?rows.length:0;}catch(e){}
+   const score=(n>0?100:0)+(info.doneCol?10:0)+(info.nameCol?1:0);
+   if(score>bestScore){bestScore=score;best=info}}
+  FS.shop=best;return best;
  }catch(e){FS.shop=false;return false}}
+var GROCERY_CATS={
+"Obst & Gemüse":["tomate","zwiebel","knoblauch","paprika","karotte","möhre","salat","gurke","apfel","äpfel","banane","zitrone","limette","kartoffel","lauch","spinat","brokkoli","zucchini","aubergine","pilz","champignon","basilikum","petersilie","schnittlauch","kräuter","beere","erdbeer","himbeer","heidelbeer","avocado","mais","erbse","bohne","kürbis","sellerie","rucola","feldsalat","ingwer","chili","frühlingszwiebel","porree","rosmarin","thymian","minze","birne","orange","mango","ananas","radieschen","kohl"],
+"Fleisch & Fisch":["hähnchen","huhn","hühner","hackfleisch","hack ","rinder","rind","schwein","speck","schinken","wurst","würstchen","salami","lachs","fisch","thunfisch","garnele","pute","pancetta","chorizo","steak","filet","kotelett","frikadelle","bacon","kabeljau","forelle","ente","lamm","gulasch"],
+"Milchprodukte":["milch","butter","käse","sahne","joghurt","quark","eier","eigelb","eiweiß","mozzarella","parmesan","frischkäse","schmand","crème","creme fraiche","feta","gouda","mascarpone","ricotta","buttermilch","margarine"],
+"Backwaren":["brot","brötchen","baguette","teig","tortilla","semmel","toast","wrap","blätterteig","pizzateig","hefeteig","croissant","fladenbrot","knäckebrot"],
+"Tiefkühl":["tiefkühl","gefroren","tk-","tk "],
+"Vorrat":["mehl","zucker","salz","pfeffer","öl","olivenöl","essig","reis","nudel","pasta","spaghetti","penne","brühe","gewürz","sauce","soße","honig","senf","ketchup","kokosmilch","currypaste","curry","backpulver","hefe","vanille","tomatenmark","passierte","konserve","linsen","kichererbsen","haferflocken","müsli","nüsse","mandel","schokolade","kakao","sojasauce","sojasoße","wein","kokos","paniermehl","stärke","speisestärke","brühwürfel","suppe"]};
+var GROCERY_ORDER=["Obst & Gemüse","Fleisch & Fisch","Milchprodukte","Backwaren","Tiefkühl","Vorrat"];
+function groceryCat(name){var n=String(name).toLowerCase();for(var i=0;i<GROCERY_ORDER.length;i++){var c=GROCERY_ORDER[i],kw=GROCERY_CATS[c];for(var j=0;j<kw.length;j++){if(n.indexOf(kw[j])>=0)return c}}return "Sonstiges"}
+var GROCERY_UNITS=["g","kg","mg","ml","l","el","tl","stk","stück","prise","prisen","bund","dose","dosen","packung","päckchen","pck","tasse","tassen","zehe","zehen","scheibe","scheiben","becher","glas","cm","liter","gramm","kilogramm","esslöffel","teelöffel","msp"];
+function parseIngredient(str){var s=String(str).trim().replace(/\s+/g," ");
+ s=s.replace(/½/g,"0.5").replace(/¼/g,"0.25").replace(/¾/g,"0.75").replace(/⅓/g,"0.33").replace(/⅔/g,"0.66");
+ if(!/\d/.test(s))return {name:s,qty:1,unit:""};
+ var m=s.match(/^(\d+(?:[.,]\d+)?)\s*([^\d\s]+)?\s*(.*)$/);
+ if(!m)return {name:s,qty:1,unit:""};
+ var qty=parseFloat(m[1].replace(",","."));var mid=m[2]||"";var rest=(m[3]||"").trim();var unit,name;
+ if(mid&&GROCERY_UNITS.indexOf(mid.toLowerCase())>=0){unit=mid;name=rest}else{unit="Stk";name=((mid?mid+" ":"")+rest).trim()}
+ if(!name)name=s;return {name:name,qty:isNaN(qty)?1:qty,unit:unit}}
 async function fsExec(a){
  try{
   const now=new Date().toISOString();
@@ -855,15 +880,12 @@ async function fsExec(a){
    const r=await fsApi("vacation_proposals",{method:"POST",body:JSON.stringify({household_id:FS.hh,name:a.name,start_date:a.start_date,end_date:a.end_date,proposed_by_id:FS.daniel,confirmed_by_ids:solo?mids:[FS.daniel],member_ids:mids,status:solo?"confirmed":"proposal",updated_at:now})});
    if(!r.ok)throw new Error("HTTP "+r.status);
    await fsLog(solo?`<strong>Daniel</strong> Urlaub: <strong>${a.name}</strong> (${fsFmt(a.start_date)} – ${fsFmt(a.end_date)})`:`<strong>Daniel</strong> schlägt Urlaub vor: <strong>${a.name}</strong>`)}
-  else if(a.op==="shopping"){const info=await fsDiscoverShop();
-   if(!info)throw new Error("Einkaufslisten-Tabelle in ROH nicht gefunden – bitte Tabellennamen nennen");
+  else if(a.op==="shopping"){
    const items=(a.items&&a.items.length?a.items:(a.item?[a.item]:[])).map(function(x){return String(x).trim()}).filter(Boolean);
    if(!items.length)throw new Error("Keine Artikel angegeben");
-   for(let idx=0;idx<items.length;idx++){const row={};row[info.nameCol]=items[idx];
-    if(info.hhCol)row[info.hhCol]=FS.hh;if(info.doneCol)row[info.doneCol]=false;
-    if(info.memberCol)row[info.memberCol]=FS.daniel;if(info.tsCol)row[info.tsCol]=now;
-    const rr=await fsApi(info.table,{method:"POST",body:JSON.stringify(row)});
-    if(!rr.ok)throw new Error("HTTP "+rr.status+" ("+info.table+")")}
+   const rows=items.map(function(s){const p=parseIngredient(s);return {household_id:FS.hh,name:p.name,qty:p.qty,unit:p.unit,category:groceryCat(p.name),source:"manual",done:false,added_by:FS.daniel}});
+   const rr=await fsApi("grocery_items",{method:"POST",body:JSON.stringify(rows)});
+   if(!rr.ok)throw new Error("HTTP "+rr.status+" (grocery_items)");
    await fsLog("<strong>Daniel</strong> hat auf die Einkaufsliste gesetzt: <strong>"+items.join(", ")+"</strong>")}
   else throw new Error("Unbekannte Aktion: "+a.op);
   await loadFamily(true);
