@@ -428,6 +428,35 @@ header{gap:12px;flex-wrap:nowrap!important;padding:11px 18px;padding-top:calc(11
  *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.08s!important}
  .view.on{animation:none}
 }
+
+/* ============================================================
+   STUFE 2 · FOTOREALISTISCHE PLATES (Hybrid · blaue Stunde)
+   ============================================================ */
+#photoplate{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.4s ease;will-change:transform}
+#scene.has-photo #photoplate{opacity:1;animation:platedrift 46s ease-in-out infinite alternate}
+#scene.has-photo #sky,#scene.has-photo #stars,#scene.has-photo #sun,#scene.has-photo #moon,
+#scene.has-photo #clouds,#scene.has-photo #cityfar,#scene.has-photo #citynear,#scene.has-photo #mull{opacity:0;transition:opacity 1.2s ease}
+@keyframes platedrift{from{transform:scale(1.06) translateY(0)}to{transform:scale(1.13) translateY(-1.6%)}}
+/* Blaue-Stunde-Lichtschicht über dem Foto (hybrid, „lebendig") */
+#scene.has-photo::before{content:"";position:absolute;inset:0;z-index:6;pointer-events:none;background:
+  linear-gradient(180deg,rgba(10,16,42,.36) 0%,rgba(8,8,22,.05) 38%,rgba(0,0,0,0) 60%,rgba(6,4,12,.58) 100%),
+  radial-gradient(80% 50% at 50% 106%,rgba(234,0,41,.10),transparent 70%)}
+@media(prefers-reduced-motion:reduce){#scene.has-photo #photoplate{animation:none}}
+/* Lobby fotorealistisch */
+#lobbyplate{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.6s ease}
+#lobbyplate.in{opacity:1}
+#lobby::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,6,18,.5),rgba(4,2,10,.2) 45%,rgba(4,2,10,.78))}
+#lobby .logo,#lobby .l2,#lobby .greet,#lobby .date,#lobby .hint{position:relative;z-index:3}
+/* Lobby-Türen als echte gebürstete Metall/Glas-Schiebetüren */
+#lobby .door{background:
+  linear-gradient(100deg,#15171c,#23262d 18%,#2c2f37 33%,#1d2026 50%,#2a2d35 67%,#202329 82%,#15171c);
+  box-shadow:inset 0 0 70px rgba(0,0,0,.6)}
+#lobby .dl{border-right:1px solid rgba(201,164,92,.5);box-shadow:inset -2px 0 14px rgba(0,0,0,.6)}
+#lobby .dr{border-left:1px solid rgba(201,164,92,.5);box-shadow:inset 2px 0 14px rgba(0,0,0,.6)}
+#lobby .door::before{content:"";position:absolute;top:0;bottom:0;width:40%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.07) 50%,transparent)}
+#lobby .dl::before{right:0}#lobby .dr::before{left:0}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
@@ -435,6 +464,7 @@ header{gap:12px;flex-wrap:nowrap!important;padding:11px 18px;padding-top:calc(11
 
 <div id="lock"><div class="lkbox"><div class="lklogo"><img src="icons/eos-logo.svg" alt="eos"></div><div class="lksub">Executive Office · privat</div><input type="password" id="lkpass" placeholder="Passphrase" autocomplete="current-password" onkeydown="if(event.key==='Enter')unlock()"><label class="lkrem"><input type="checkbox" id="lkrem" checked> Auf diesem Gerät angemeldet bleiben</label><button id="lkbtn" onclick="unlock()">Entsperren</button><div id="lkmsg"></div></div></div>
 <div id="lobby">
+<div id="lobbyplate"></div>
 <div class="door dl"></div><div class="door dr"></div>
 <div class="logo"><img src="icons/eos-logo.svg" alt="eos"></div>
 <div class="l2">DREOS · Virtual Office</div>
@@ -444,6 +474,7 @@ header{gap:12px;flex-wrap:nowrap!important;padding:11px 18px;padding-top:calc(11
 </div>
 
 <div id="scene">
+<div id="photoplate"></div>
 <div id="sky"></div><div id="stars"></div>
 <div id="sun"></div><div id="moon"></div>
 <div id="hglow"></div><div id="clouds"></div>
@@ -1513,6 +1544,26 @@ function navGo(t){
      if((room&&room.classList.contains("on"))||(meet&&meet.classList.contains("on"))){leaveRoom()}
    }},{passive:true});
 })();
+
+/* ============================================================
+   STUFE 2 · Fotorealistische Plates laden (Flux, blaue Stunde)
+   ============================================================ */
+var PLATES={
+ floor:["RAW photo, photorealistic panoramic city skyline at blue hour seen through floor-to-ceiling windows of a luxurious executive office, dusk sky, glowing building lights, soft reflections, cinematic, shot on Sony A7III, 8K, ultra-detailed, ultra-sharp, depth of field",2208],
+ lobby:["RAW photo, photorealistic interior of an ultra-luxurious executive top-floor reception lobby at blue hour, floor-to-ceiling windows overlooking a city skyline at dusk, dark walnut and brushed brass, polished stone floor with subtle reflections, warm ambient lighting, cinematic, shot on Canon EOS R5, 8K, ultra-detailed, ultra-sharp, photorealistic",1207]
+};
+function plateUrl(p){return "https://image.pollinations.ai/prompt/"+encodeURIComponent(p[0])+"?width=768&height=1280&seed="+p[1]+"&nologo=true&model=flux"}
+function loadPlate(key){
+ var p=PLATES[key];if(!p)return;
+ var url=plateUrl(p),img=new Image();
+ img.onload=function(){
+   if(key==="floor"){var el=document.getElementById("photoplate");if(el){el.style.backgroundImage="url('"+url+"')";var sc=document.getElementById("scene");if(sc)sc.classList.add("has-photo")}}
+   else if(key==="lobby"){var lp=document.getElementById("lobbyplate");if(lp){lp.style.backgroundImage="url('"+url+"')";lp.classList.add("in")}}
+ };
+ img.src=url;
+}
+function loadPlates(){loadPlate("floor");loadPlate("lobby")}
+loadPlates();
 </script>
 </body>
 </html>
