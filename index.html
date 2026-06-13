@@ -1564,6 +1564,31 @@ function loadPlate(key){
 }
 function loadPlates(){loadPlate("floor");loadPlate("lobby")}
 loadPlates();
+
+/* ============================================================
+   STUFE 3 · Fotorealistische Experten-Büros & Boardroom
+   ============================================================ */
+var OFFICES={
+ vera:["RAW photo, photorealistic serene executive coaching office at blue hour, two leather lounge chairs facing each other, floor-to-ceiling window with dusk city skyline, warm lamp light, dark walnut, subtle red accent, cinematic, shot on Canon EOS R5, 8K, ultra-detailed, ultra-sharp, depth of field",3311],
+ henrik:["RAW photo, photorealistic organizational architect studio at blue hour, large glass whiteboard with system diagrams, architectural models on a table, dusk city skyline window, brushed brass, minimalist, cinematic, shot on Sony A7III, 8K, ultra-detailed, ultra-sharp, depth of field",3322],
+ ingrid:["RAW photo, photorealistic COO operations command office at blue hour, wall of softly glowing KPI dashboards, sleek dark desk, floor-to-ceiling dusk skyline window, deep tones with red accent, cinematic, shot on Canon EOS R5, 8K, ultra-detailed, ultra-sharp, depth of field",3333],
+ samuel:["RAW photo, photorealistic warm chief talent officer office at blue hour, wooden bookshelves, comfortable seating, soft warm lighting, plants, dusk city skyline window, walnut and brass, cinematic, shot on Sony A7III, 8K, ultra-detailed, ultra-sharp, depth of field",3344],
+ carla:["RAW photo, photorealistic transformation war room at blue hour, glass wall covered in sticky notes, modern energetic furniture, dusk skyline window, EOS red accents, cinematic, shot on Canon EOS R5, 8K, ultra-detailed, ultra-sharp, depth of field",3355],
+ adrian:["RAW photo, photorealistic technology advisor office at blue hour, multiple monitors showing architecture diagrams with ambient glow, minimalist tech desk, dusk skyline window, dark tones and brass, cinematic, shot on Sony A7III, 8K, ultra-detailed, ultra-sharp, depth of field",3366],
+ konstantin:["RAW photo, photorealistic diplomatic senior executive corner office at blue hour, elegant meeting chairs, refined dark wood, a globe, floor-to-ceiling dusk skyline window, brass details, cinematic, shot on Canon EOS R5, 8K, ultra-detailed, ultra-sharp, depth of field",3377],
+ mara:["RAW photo, photorealistic stark dramatic strategy room at blue hour, moody low lighting, concrete and dark steel, a single red accent light, dusk skyline window, intense atmosphere, cinematic, shot on Sony A7III, 8K, ultra-detailed, ultra-sharp, depth of field",3388],
+ board:["RAW photo, photorealistic luxurious executive boardroom at blue hour, long polished conference table with leather chairs, floor-to-ceiling windows with dusk city skyline, brushed brass and walnut, warm ambient lighting, cinematic, shot on Canon EOS R5, 8K, ultra-detailed, ultra-sharp, depth of field",3400]
+};
+var _plateKey="floor";
+function plateUrlOf(prompt,seed){return "https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt)+"?width=768&height=1280&seed="+seed+"&nologo=true&model=flux"}
+function setScenePlate(url){var el=document.getElementById("photoplate");if(el){el.style.backgroundImage="url('"+url+"')";var sc=document.getElementById("scene");if(sc)sc.classList.add("has-photo")}}
+function applyPlate(key,prompt,seed){_plateKey=key;var url=plateUrlOf(prompt,seed);var img=new Image();img.onload=function(){if(_plateKey===key)setScenePlate(url)};img.src=url}
+/* Backdrop beim Raumwechsel automatisch tauschen */
+(function(){if(typeof show!=="function")return;var _s=show;show=function(v){_s(v);try{
+  if(v==="room"&&window.CUR&&CUR.id&&OFFICES[CUR.id]){applyPlate(CUR.id,OFFICES[CUR.id][0],OFFICES[CUR.id][1])}
+  else if(v==="meet"){applyPlate("board",OFFICES.board[0],OFFICES.board[1])}
+  else if(v==="hub"){if(_plateKey!=="floor")applyPlate("floor",PLATES.floor[0],PLATES.floor[1])}
+}catch(e){}}})();
 </script>
 </body>
 </html>
