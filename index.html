@@ -457,6 +457,13 @@ header{gap:12px;flex-wrap:nowrap!important;padding:11px 18px;padding-top:calc(11
 #lobby .door::before{content:"";position:absolute;top:0;bottom:0;width:40%;
   background:linear-gradient(100deg,transparent,rgba(255,255,255,.07) 50%,transparent)}
 #lobby .dl::before{right:0}#lobby .dr::before{left:0}
+#fsbar{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(220%);z-index:120;width:min(440px,92vw);background:rgba(20,9,14,.98);border:1px solid rgba(201,164,92,.55);border-radius:16px;padding:16px 18px;box-shadow:0 18px 55px rgba(0,0,0,.6);transition:transform .4s cubic-bezier(.2,.9,.3,1)}
+#fsbar.show{transform:translateX(-50%) translateY(0)}
+#fsbar .ti{color:var(--teal);font-weight:bold;font-size:14px}
+#fsbar .d{font-size:13.5px;color:var(--mut);margin:6px 0 12px;line-height:1.5}
+#fsbar .row{display:flex;gap:10px}
+#fsbar .ok{flex:1;background:var(--red);border:none;color:#fff;font-weight:bold;border-radius:11px;padding:13px;font-size:15px;cursor:pointer;font-family:inherit}
+#fsbar .no{background:none;border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:13px 16px;font-size:15px;cursor:pointer;font-family:inherit}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
@@ -544,6 +551,7 @@ header{gap:12px;flex-wrap:nowrap!important;padding:11px 18px;padding-top:calc(11
 
 <div id="ovl" onclick="if(event.target===this)closeOvl()"><div class="panel" id="panel"></div></div>
 <div id="toast"></div>
+<div id="fsbar"><div class="ti">Sophie möchte in ROH eintragen</div><div class="d" id="fsbarD"></div><div class="row"><button class="ok" onclick="fsGo(this)">✓ In ROH eintragen</button><button class="no" onclick="fsCancel()">Abbrechen</button></div></div>
 
 <!-- ====== Bottom Command Bar · Stufe 1 ====== -->
 <nav id="cmdbar">
@@ -799,7 +807,7 @@ SCHREIBZUGRIFF AUF ROH: Wenn Daniel dich bittet, etwas in der Familien-App einzu
 @@FS{"op":"birthday","name":"…","date":"JJJJ-MM-TT"}@@
 @@FS{"op":"vacation","name":"…","start_date":"JJJJ-MM-TT","end_date":"JJJJ-MM-TT","members":["daniel","kim"]}@@
 @@FS{"op":"shopping","items":["Milch","Brot"]}@@  (setzt einen oder mehrere Artikel auf die gemeinsame Einkaufsliste)
-Regeln: Heute ist ${today()}. Fehlen Datum oder Details, frage nach statt zu raten. Daniel bestätigt jede Aktion per Klick, bevor sie wirklich eingetragen wird – kündige das kurz an. Einträge für Kim nur, wenn Daniel es ausdrücklich verlangt.`}
+Regeln: Heute ist ${today()}. Fehlen Datum oder Details, frage nach statt zu raten. Daniel bestätigt jede Aktion per Klick, bevor sie wirklich eingetragen wird – kündige das kurz an. Einträge für Kim nur, wenn Daniel es ausdrücklich verlangt. WICHTIG: Sobald Daniel etwas einkaufen lassen oder auf die Einkaufsliste setzen will, MUSST du die Zeile @@FS{"op":"shopping","items":["…"]}@@ ans Ende deiner Antwort hängen – ohne diese Zeile passiert technisch nichts. Du siehst die aktuelle Einkaufsliste NICHT – behaupte also nie, ein Artikel stehe schon drauf. Sage nach dem Anhängen der Zeile NICHT „erledigt"; sage stattdessen, Daniel soll unten auf den grünen Knopf „In ROH eintragen" klicken – erst dieser Klick speichert es wirklich (ein getipptes „ok" speichert nichts).`}
 function fsDescribe(a){
  if(a.op==="status")return (a.member==="kim"?"Kim":"Daniel")+" ist am "+fsFmt(a.date)+" "+(FSTAT[a.status]||a.status)+(a.note?" – Notiz: "+a.note:"");
  if(a.op==="appt")return "Termin „"+a.description+"“ am "+fsFmt(a.date)+" "+(a.time_from||"")+(a.time_to?"–"+a.time_to:"")+" für "+((a.members||["daniel"]).join(" + "));
@@ -883,19 +891,23 @@ async function fsExec(a){
   else if(a.op==="shopping"){
    const items=(a.items&&a.items.length?a.items:(a.item?[a.item]:[])).map(function(x){return String(x).trim()}).filter(Boolean);
    if(!items.length)throw new Error("Keine Artikel angegeben");
-   const rows=items.map(function(s){const p=parseIngredient(s);return {household_id:FS.hh,name:p.name,qty:p.qty,unit:p.unit,category:groceryCat(p.name),source:"manual",done:false,added_by:FS.daniel}});
-   const rr=await fsApi("grocery_items",{method:"POST",body:JSON.stringify(rows)});
-   if(!rr.ok)throw new Error("HTTP "+rr.status+" (grocery_items)");
+   for(let idx=0;idx<items.length;idx++){const p=parseIngredient(items[idx]);
+    const row={household_id:FS.hh,name:p.name,qty:p.qty,unit:p.unit,category:groceryCat(p.name),source:"manual",done:false,added_by:FS.daniel};
+    const rr=await fsApi("grocery_items",{method:"POST",body:JSON.stringify(row)});
+    const txt=await rr.text();
+    if(!rr.ok)throw new Error("HTTP "+rr.status+" "+String(txt).slice(0,140));
+    let rep=null;try{rep=JSON.parse(txt)}catch(e){}
+    if(!(Array.isArray(rep)&&rep.length))throw new Error("Supabase-Antwort leer – Eintrag nicht gespeichert");}
    await fsLog("<strong>Daniel</strong> hat auf die Einkaufsliste gesetzt: <strong>"+items.join(", ")+"</strong>")}
   else throw new Error("Unbekannte Aktion: "+a.op);
   await loadFamily(true);
   return{ok:true}
  }catch(e){return{ok:false,err:String(e&&e.message||e)}}}
 let FSPEND=null;
-function fsConfirm(a){FSPEND=a;
- ephem(`<div class="fsact"><b>Sophie möchte in ROH eintragen:</b><br>${esc(fsDescribe(a))}<div class="btnrow" style="margin-top:8px"><button class="btn" onclick="fsGo(this)">✓ In ROH eintragen</button><button class="btn" onclick="FSPEND=null;this.closest('.m').remove()">Verwerfen</button></div></div>`)}
+function fsConfirm(a){FSPEND=a;var d=document.getElementById("fsbarD");if(d)d.textContent=fsDescribe(a);var b=document.getElementById("fsbar");if(b)b.classList.add("show")}
+function fsCancel(){FSPEND=null;var b=document.getElementById("fsbar");if(b)b.classList.remove("show")}
 async function fsGo(btn){if(!FSPEND)return;btn.disabled=true;btn.textContent="Trage ein…";const a=FSPEND;FSPEND=null;
- const r=await fsExec(a);const box=btn.closest(".m");if(box)box.remove();
+ const r=await fsExec(a);var bar=document.getElementById("fsbar");if(bar)bar.classList.remove("show");btn.disabled=false;btn.textContent="✓ In ROH eintragen";
  if(r.ok){addMsg("a","Erledigt – steht in der ROH-App. Kim sieht es im Activity-Feed.");speak("Erledigt – steht in der ROH-App.","sophie");toast("✓ In ROH eingetragen")}
  else ephem("⚠ ROH-Eintrag fehlgeschlagen: "+esc(r.err))}
 function renderFamLine(){const el=document.getElementById("famline");if(!el)return;
